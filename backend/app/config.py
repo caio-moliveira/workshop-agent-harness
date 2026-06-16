@@ -22,6 +22,12 @@ class Settings(BaseSettings):
     agente_ro_user: str = "agente_ro"
     agente_ro_password: str = ""
 
+    # Qdrant + embeddings (issue #18). Defaults locais; sobrescritos pelo ambiente.
+    qdrant_url: str = "http://localhost:6333"
+    openai_api_key: str = ""
+    embed_model: str = "text-embedding-3-large"
+    embed_dim: int = 3072
+
     @property
     def agente_ro_url(self) -> str:
         """URL async com as credenciais read-only do agente, derivada da DATABASE_URL."""
