@@ -204,6 +204,8 @@ async def _no_enriquecer(state: ChatState) -> dict[str, Any]:
     """Por KPI fraco: diagnostico (porque) -> prescricao (o que fazer). Data-driven."""
     fontes: list[dict[str, Any]] = []
     recomendacoes: list[dict[str, Any]] = []
+    # #24: prescricoes ja recomendadas em turnos anteriores da sessao nao se repetem.
+    excluidas = set(state.get("fontes_excluidas", []))
     for achado in state.get("achados", []):
         kpi = achado.get("kpi", "")
         dim = achado.get("dimensao", "")
@@ -235,6 +237,9 @@ async def _no_enriquecer(state: ChatState) -> dict[str, Any]:
                 }
             )
         for hit in presc:
+            # Nao repete prescricao ja recomendada em turno anterior da sessao (#24).
+            if hit.fonte in excluidas:
+                continue
             fontes.append(
                 {
                     "colecao": "prescricao",
@@ -302,24 +307,40 @@ def build_graph() -> Any:
 GRAPH = build_graph()
 
 
-async def run_chat(pergunta: str, callbacks: list[Any] | None = None) -> dict[str, Any]:
+def _estado_inicial(pergunta: str, fontes_excluidas: list[str] | None) -> dict[str, Any]:
+    estado: dict[str, Any] = {"pergunta": pergunta}
+    if fontes_excluidas:
+        estado["fontes_excluidas"] = fontes_excluidas
+    return estado
+
+
+async def run_chat(
+    pergunta: str,
+    callbacks: list[Any] | None = None,
+    fontes_excluidas: list[str] | None = None,
+) -> dict[str, Any]:
     config = {"callbacks": callbacks} if callbacks else {}
-    return await GRAPH.ainvoke({"pergunta": pergunta}, config=config)
+    return await GRAPH.ainvoke(_estado_inicial(pergunta, fontes_excluidas), config=config)
 
 
 async def run_chat_stream(
-    pergunta: str, callbacks: list[Any] | None = None
+    pergunta: str,
+    callbacks: list[Any] | None = None,
+    fontes_excluidas: list[str] | None = None,
 ) -> AsyncIterator[tuple[str, Any]]:
     """Stream do grafo (issue #23). Emite `("progresso", <no>)` a cada no concluido e,
     ao final, `("final", <estado_completo>)`.
 
     Usa `astream` com dois modos: `updates` (qual no acabou) e `values` (estado
-    acumulado). O ultimo snapshot de `values` e o estado final do run.
+    acumulado). O ultimo snapshot de `values` e o estado final do run. `fontes_excluidas`
+    (#24) carrega as prescricoes ja recomendadas na sessao para nao repeti-las.
     """
     config = {"callbacks": callbacks} if callbacks else {}
     final: dict[str, Any] = {}
     async for modo, chunk in GRAPH.astream(
-        {"pergunta": pergunta}, config=config, stream_mode=["updates", "values"]
+        _estado_inicial(pergunta, fontes_excluidas),
+        config=config,
+        stream_mode=["updates", "values"],
     ):
         if modo == "updates":
             for no in chunk:

@@ -13,7 +13,8 @@ from typing_extensions import TypedDict
 
 
 class ChatState(TypedDict, total=False):
-    pergunta: str
+    pergunta: str  # ja reescrita (autonoma) pela porta conversacional (#24)
+    fontes_excluidas: list[str]  # prescricoes ja recomendadas na sessao -> nao repetir (#24)
     periodo: str  # YYYY-MM alvo (mes atual + 1)
     mes_atual: str  # YYYY-MM do ultimo mes com dados
     kpis_foco: list[str]

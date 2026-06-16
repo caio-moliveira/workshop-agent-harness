@@ -24,18 +24,68 @@ def _admin_engine() -> AsyncEngine:
     return _engine
 
 
-async def criar_run(pergunta: str, sessao_id: str | None = None) -> str:
+async def criar_sessao(rotulo: str | None = None) -> str:
+    async with _admin_engine().begin() as conn:
+        row = (
+            await conn.execute(
+                text("INSERT INTO harness.sessoes (rotulo) VALUES (:r) RETURNING id"),
+                {"r": rotulo},
+            )
+        ).first()
+    return str(row[0]) if row else ""
+
+
+async def criar_run(
+    pergunta: str,
+    sessao_id: str | None = None,
+    pergunta_reescrita: str | None = None,
+) -> str:
     async with _admin_engine().begin() as conn:
         row = (
             await conn.execute(
                 text(
-                    "INSERT INTO harness.runs (sessao_id, pergunta, status) "
-                    "VALUES (:s, :p, 'em_andamento') RETURNING id"
+                    "INSERT INTO harness.runs (sessao_id, pergunta, pergunta_reescrita, status) "
+                    "VALUES (:s, :p, :pr, 'em_andamento') RETURNING id"
                 ),
-                {"s": sessao_id, "p": pergunta},
+                {"s": sessao_id, "p": pergunta, "pr": pergunta_reescrita},
             )
         ).first()
     return str(row[0]) if row else ""
+
+
+async def historico_sessao(sessao_id: str, limite: int = 5) -> list[dict[str, Any]]:
+    """Turnos concluidos da sessao, mais recente primeiro (para o condense-question)."""
+    async with _admin_engine().connect() as conn:
+        rows = (
+            await conn.execute(
+                text(
+                    "SELECT pergunta, pergunta_reescrita, relatorio FROM harness.runs "
+                    "WHERE sessao_id = :s AND status = 'concluido' "
+                    "ORDER BY criado_em DESC LIMIT :n"
+                ),
+                {"s": sessao_id, "n": limite},
+            )
+        ).all()
+    return [
+        {"pergunta": r[0], "pergunta_reescrita": r[1], "relatorio": r[2]} for r in rows
+    ]
+
+
+async def fontes_prescricao_da_sessao(sessao_id: str) -> list[str]:
+    """Fontes de prescricao ja recuperadas na sessao — para nao repetir recomendacoes."""
+    async with _admin_engine().connect() as conn:
+        rows = (
+            await conn.execute(
+                text(
+                    "SELECT DISTINCT fr.fonte FROM harness.fontes_recuperadas fr "
+                    "JOIN harness.runs r ON fr.run_id = r.id "
+                    "WHERE r.sessao_id = :s AND fr.colecao = 'prescricao' "
+                    "AND fr.fonte IS NOT NULL"
+                ),
+                {"s": sessao_id},
+            )
+        ).all()
+    return [r[0] for r in rows]
 
 
 async def registrar_tool_call(

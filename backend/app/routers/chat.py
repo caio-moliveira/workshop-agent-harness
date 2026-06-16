@@ -24,10 +24,15 @@ class ChatRequest(BaseModel):
 
 @router.post("/chat")
 async def chat(req: ChatRequest) -> StreamingResponse:
-    # criar_run fora do gerador: falha de DB vira erro HTTP antes do stream comecar.
-    run_id = await chat_service.iniciar(req.pergunta, req.sessao_id)
+    # Preparo (sessao + condense + roteador + run) fora do gerador: falha de DB/LLM
+    # vira erro HTTP antes de o stream comecar.
+    preparo = await chat_service.iniciar(req.pergunta, req.sessao_id)
     return StreamingResponse(
-        chat_service.stream(run_id, req.pergunta),
+        chat_service.stream(preparo),
         media_type="text/event-stream",
-        headers={"X-Run-Id": run_id, "Cache-Control": "no-cache"},
+        headers={
+            "X-Run-Id": preparo.run_id,
+            "X-Sessao-Id": preparo.sessao_id,
+            "Cache-Control": "no-cache",
+        },
     )

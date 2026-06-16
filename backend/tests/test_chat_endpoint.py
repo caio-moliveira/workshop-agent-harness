@@ -1,9 +1,10 @@
-"""Teste do contrato HTTP do POST /chat (issues #19, #23) — streaming SSE.
+"""Teste do contrato HTTP do POST /chat (issues #19, #23, #24) — streaming SSE.
 
-Verifica o seam mais alto (httpx) sem DB, LLM, Qdrant nem MinIO reais: o stream do
-grafo, a persistencia no harness e o MinIO sao substituidos, isolando o contrato da
-rota. Cobre o streaming (eventos `inicio`/`progresso`/`final`) e que a persistencia
-de artefatos e chamada com relatorio + grafico (objeto gravado no MinIO).
+Verifica o seam mais alto (httpx) sem DB, LLM, Qdrant nem MinIO reais: a porta
+conversacional, o stream do grafo, a persistencia no harness e o MinIO sao
+substituidos, isolando o contrato da rota. Cobre o streaming (eventos
+inicio/progresso/final), a sessao e que a persistencia de artefatos e chamada com
+relatorio + grafico (objeto gravado no MinIO).
 """
 
 import json
@@ -33,12 +34,19 @@ async def test_post_chat_stream_e_persiste_artefatos(monkeypatch: Any) -> None:
         "sql_log": ["SELECT 1"],
     }
 
-    async def fake_stream(pergunta: str, callbacks: Any = None):
+    async def fake_stream(
+        pergunta: str, callbacks: Any = None, fontes_excluidas: Any = None
+    ):
         yield "progresso", "planejar"
         yield "progresso", "perna_quantitativa"
         yield "final", estado_final
 
-    async def fake_criar_run(pergunta: str, sessao_id: Any = None) -> str:
+    async def fake_criar_sessao(rotulo: Any = None) -> str:
+        return "sess-1"
+
+    async def fake_criar_run(
+        pergunta: str, sessao_id: Any = None, pergunta_reescrita: Any = None
+    ) -> str:
         return "run-123"
 
     async def fake_noop(*args: Any, **kwargs: Any) -> None:
@@ -46,9 +54,7 @@ async def test_post_chat_stream_e_persiste_artefatos(monkeypatch: Any) -> None:
 
     capturado: dict[str, Any] = {}
 
-    async def fake_persistir(
-        run_id: str, relatorio: str, grafico: Any
-    ) -> dict[str, str]:
+    async def fake_persistir(run_id: str, relatorio: str, grafico: Any) -> dict[str, str]:
         capturado["run_id"] = run_id
         capturado["relatorio"] = relatorio
         capturado["grafico"] = grafico
@@ -59,6 +65,9 @@ async def test_post_chat_stream_e_persiste_artefatos(monkeypatch: Any) -> None:
 
     monkeypatch.setattr(svc, "run_chat_stream", fake_stream)
     monkeypatch.setattr(svc, "get_langfuse_callbacks", lambda run_id=None: [])
+    # historico vazio (turno 1) -> rotear nao chama o LLM; o modelo nem e usado.
+    monkeypatch.setattr(svc, "get_chat_model", lambda tier="rapido": None)
+    monkeypatch.setattr(svc.repo, "criar_sessao", fake_criar_sessao)
     monkeypatch.setattr(svc.repo, "criar_run", fake_criar_run)
     monkeypatch.setattr(svc.repo, "registrar_tool_call", fake_noop)
     monkeypatch.setattr(svc.repo, "registrar_fonte", fake_noop)
@@ -71,6 +80,7 @@ async def test_post_chat_stream_e_persiste_artefatos(monkeypatch: Any) -> None:
             assert resp.status_code == 200
             assert resp.headers["content-type"].startswith("text/event-stream")
             assert resp.headers["x-run-id"] == "run-123"
+            assert resp.headers["x-sessao-id"] == "sess-1"
             async for linha in resp.aiter_lines():
                 eventos.append(linha)
 
@@ -79,7 +89,6 @@ async def test_post_chat_stream_e_persiste_artefatos(monkeypatch: Any) -> None:
     assert "event: progresso" in texto
     assert "event: final" in texto
 
-    # Extrai o JSON do evento final (linha `data:` seguinte ao `event: final`).
     final_payload = None
     for i, linha in enumerate(eventos):
         if linha == "event: final":
@@ -87,6 +96,8 @@ async def test_post_chat_stream_e_persiste_artefatos(monkeypatch: Any) -> None:
             break
     assert final_payload is not None
     assert final_payload["run_id"] == "run-123"
+    assert final_payload["sessao_id"] == "sess-1"
+    assert final_payload["intencao"] == "central"
     assert final_payload["relatorio"] == "Relatorio de teste."
     assert final_payload["sql_executado"] == ["SELECT 1"]
     # Fontes citadas voltam estruturadas e inspecionaveis pelo cliente.

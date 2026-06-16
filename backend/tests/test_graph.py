@@ -88,6 +88,55 @@ async def test_grafo_pede_clarificacao_quando_nao_analisavel(
     assert not state.get("achados")  # nao abriu a perna quantitativa
 
 
+async def test_grafo_suprime_prescricao_ja_recomendada(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """#24: prescricao ja recomendada na sessao (fontes_excluidas) nao reaparece."""
+
+    async def fake_run_sql(sql: str, **kw: object) -> SqlResult:
+        if "MAX(data_pedido)" in sql:
+            return SqlResult(columns=["ano", "mes"], rows=[(2026, 6)], rowcount=1, sql=sql)
+        if "EXTRACT(MONTH FROM p.data_pedido)" in sql:
+            return SqlResult(
+                columns=["regiao", "real", "meta"],
+                rows=[("Sul", 90.0, 100.0)],
+                rowcount=1,
+                sql=sql,
+            )
+        if "BETWEEN" in sql:
+            return SqlResult(
+                columns=["regiao", "real", "meta"],
+                rows=[("Sul", 100.0, 200.0)],
+                rowcount=1,
+                sql=sql,
+            )
+        return SqlResult(columns=[], rows=[], rowcount=0, sql=sql)
+
+    async def fake_search(collection: str, query: str, filters: object, **kw: object):
+        if collection == "prescricao":
+            return [
+                SearchHit(
+                    fonte="minio://presc/frete.md",
+                    score=0.6,
+                    payload={"document": "frete gratis no Sul", "resultado": "positivo"},
+                )
+            ]
+        return []
+
+    fake_llm = FakeListChatModel(responses=['{"kpis": ["faturamento"]}', "Relatorio."])
+    monkeypatch.setattr(g, "run_sql", fake_run_sql)
+    monkeypatch.setattr(g, "search", fake_search)
+    monkeypatch.setattr(g, "get_chat_model", lambda tier="forte": fake_llm)
+
+    state = await g.run_chat(
+        "e no Sul?", fontes_excluidas=["minio://presc/frete.md"]
+    )
+
+    # A unica prescricao disponivel ja foi recomendada antes -> nada de novo.
+    assert state["recomendacoes"] == []
+    assert all(f["colecao"] != "prescricao" for f in state["fontes"])
+
+
 def test_add_meses_trata_virada_de_ano() -> None:
     assert g._add_meses(2026, 6, 1) == (2026, 7)
     assert g._add_meses(2026, 12, 1) == (2027, 1)
