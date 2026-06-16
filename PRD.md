@@ -12,9 +12,13 @@ fundamentado — não outro gráfico para interpretar sozinho.
 
 ## Solution
 
-> **Os dados já estão postos:** ~5 anos de vendas/metas no Postgres (schema `negocio`) e o corpus
-> qualitativo (tickets, NPS, atas, post-mortems) em markdown, subido ao MinIO e indexado no Qdrant.
-> O escopo deste PRD é a **aplicação que consome esses dados**, não a produção deles.
+> **Os dados já estão postos e carregados — não há ingestão neste projeto.** ~5 anos de vendas/metas
+> vivem no Postgres (schema `negocio`), cuja DDL está em `schema.sql`. O corpus qualitativo
+> (tickets, NPS, atas, post-mortems), originado da pasta `seed/corpus/`, **já foi indexado** nas três
+> coleções do Qdrant, junto das definições/exemplos da camada semântica. O escopo deste PRD é a
+> **aplicação que consome esses dados**. A estrutura dos dados já carregados está documentada na
+> seção *Estrutura dos dados (referência)* — para o app entender o que está lá, **não para reproduzir
+> a carga**.
 
 Um assistente **agêntico, em formato de chat**, que costura duas naturezas de dado para produzir
 **relatórios de melhoria acionáveis** para o próximo período:
@@ -52,34 +56,37 @@ inspeciona as fontes citadas e faz perguntas de acompanhamento.
 15. Como analista, quero uma leitura comparativa ("compare este mês com o mesmo mês do ano passado"), para quantificar a variação.
 16. Como analista, quero que recomendações já feitas em relatórios anteriores não se repitam, para o relatório agregar algo novo.
 
-**Administrador de conteúdo**
-17. Como admin de conteúdo, quero subir documentos qualitativos (tickets, NPS, atas, post-mortems), para alimentar o corpus de diagnóstico e prescrição.
-18. Como admin de conteúdo, quero que cada documento guarde o **período que ele descreve** (`periodo_referencia`) separado da data de upload, para o filtro sazonal funcionar.
-19. Como admin de conteúdo, quero classificar um post-mortem com o `kpi_alvo` e o `resultado` (positivo/nulo/negativo), para o agente contrastar o que funcionou.
-20. Como admin de conteúdo, quero gerenciar o corpus (ver, recarregar) por uma tela, para manter a curadoria.
-
-**Carga de dados / operação**
-21. Como operador, quero carregar os dados de vendas e as metas/OKRs no Postgres por seed/upload manual, para ter histórico suficiente (2+ anos) para sazonalidade.
-22. Como operador, quero indexar as definições de métricas/colunas e exemplos (pergunta→SQL) na `camada_semantica`, para o agente gerar SQL correto.
-23. Como operador, quero subir todo o ambiente com `docker compose up`, para reproduzir o sistema inteiro.
+**Operação / ambiente**
+17. Como operador, quero subir todo o ambiente com `docker compose up` (Postgres, Qdrant, MinIO, backend, frontend, nginx, Langfuse) com os stores **já populados**, para reproduzir o sistema inteiro em execução sem rodar nenhuma carga.
 
 **Garantias do sistema (transversais)**
-24. Como dono do produto, quero que toda query ao schema de negócio seja somente leitura, para o agente nunca alterar dados reais.
-25. Como dono do produto, quero guardrails determinísticos no SQL (usuário read-only, allowlist, `LIMIT`, timeout), para o agente não rodar consultas perigosas ou caras.
-26. Como dono do produto, quero que afirmações prescritivas sem fonte sejam tratadas como falha, para garantir grounding.
-27. Como dono do produto, quero que cada run registre tools chamadas, SQL executado e fontes recuperadas (Langfuse + schema de harness), para observabilidade e auditoria.
-28. Como dono do produto, quero que o enriquecimento seja sempre filtrado por dimensão + tempo + `kpi_alvo`, para o agente não trazer ruído genérico.
+18. Como dono do produto, quero que toda query ao schema de negócio seja somente leitura, para o agente nunca alterar dados reais.
+19. Como dono do produto, quero guardrails determinísticos no SQL (usuário read-only, allowlist, `LIMIT`, timeout), para o agente não rodar consultas perigosas ou caras.
+20. Como dono do produto, quero que afirmações prescritivas sem fonte sejam tratadas como falha, para garantir grounding.
+21. Como dono do produto, quero que cada run registre tools chamadas, SQL executado e fontes recuperadas (Langfuse + schema de harness), para observabilidade e auditoria.
+22. Como dono do produto, quero que o enriquecimento seja sempre filtrado por dimensão + tempo + `kpi_alvo`, para o agente não trazer ruído genérico.
 
-**Avaliação (EDD)**
-29. Como autor do workshop, quero um golden dataset de `(pergunta → SQL esperado / resposta esperada / fontes esperadas)`, para medir a qualidade do agente objetivamente.
-30. Como autor do workshop, quero que as regressões dos evals rodem como gate de aceite a cada entrega, para não regredir silenciosamente.
-31. Como autor do workshop, quero medir execution accuracy, faithfulness e answer relevancy, para cobrir corretude do SQL, fidelidade da narrativa e relevância da resposta.
+**Avaliação (agente harness, pré-deploy)**
+23. Como autor do workshop, quero um golden dataset de `(pergunta → tools esperadas → SQL esperado → fontes esperadas → recomendação esperada)`, para medir a qualidade do agente objetivamente.
+24. Como autor do workshop, quero um **agente avaliador em `.claude/agents`** que rode o código contra o golden dataset e julgue se as tools invocadas e a resposta gerada batem com o esperado, para validar uma entrega **antes de subir o código** — sem precisar de um script de evals separado.
+25. Como autor do workshop, quero que esse agente avalie execution accuracy, fidelidade das tools/fontes (faithfulness) e relevância da resposta (answer relevancy), e emita um veredito de aceite (pass/fail por caso + agregado), para não regredir silenciosamente.
 
 ## Implementation Decisions
 
 **Arquitetura e fases**
-- **Duas fases com fronteira rígida**: ingestão (offline, determinística, sem agente/LLM raciocinando) e runtime (serving, onde o agente vive). O embedding na ingestão é vetorização, não "o agente".
-- **Stack:** Backend **FastAPI** (Python 3.13, uv) + **LangChain/LangGraph** — o agente é um grafo determinístico LangGraph sobre o ecossistema LangChain, não um ReAct livre. Frontend **React + Vite**. Stores: **Postgres** (negócio + harness), **Qdrant** (3 coleções), **MinIO** (corpus bruto). **nginx** como reverse proxy protegendo a aplicação (única porta exposta ao host). **Docker Compose** sobe tudo; **Langfuse** para observabilidade. Embeddings da ingestão: **OpenAI `text-embedding-3-large` (3072d)**, arquitetura provider-agnostic (trocável).
+- **App é só runtime (serving).** A ingestão **não faz parte deste projeto**: os dados já estão
+  carregados (Postgres populado a partir de `schema.sql`; coleções do Qdrant já indexadas a partir
+  de `seed/corpus/` e das queries da camada semântica). O app **consome** stores pré-populados;
+  a estrutura desses dados está descrita em *Estrutura dos dados (referência)* apenas como
+  apontamento, sem nenhuma rotina de carga.
+- **Stack:** Backend **FastAPI** (Python 3.13, uv) + **LangChain/LangGraph** — o agente é um grafo
+  determinístico LangGraph sobre o ecossistema LangChain, não um ReAct livre. Frontend **React + Vite**.
+  Stores: **Postgres** (negócio + harness), **Qdrant** (3 coleções já populadas), **MinIO**
+  (persistência de relatórios e gráficos gerados). **nginx** como reverse proxy protegendo a
+  aplicação (única porta exposta ao host). **Docker Compose** sobe tudo com os stores já populados;
+  **Langfuse** para observabilidade. Embeddings usados na indexação (já realizada):
+  **OpenAI `text-embedding-3-large` (3072d)**, arquitetura provider-agnostic (trocável) — o app
+  reusa o mesmo modelo só para embeddar a *query* em runtime.
 
 **O agente (runtime)**
 - **Grafo LangGraph determinístico**: arestas fixas `planejar → perna_quantitativa → (por KPI fraco: diagnostico → prescricao) → sintese → relatorio`. O fan-out é data-driven (nº de KPIs fracos); o LLM decide só dentro de nós (traduzir pergunta→KPIs, gerar SQL, escolher dimensão, redigir narrativa). Sem ReAct livre. Reaproveita as tools individuais do `SQLDatabaseToolkit` dentro do grafo próprio.
@@ -87,40 +94,81 @@ inspeciona as fontes citadas e faz perguntas de acompanhamento.
 - **Ambiguidade:** best-effort com **premissas declaradas** no topo do relatório (default: período = mês atual + 1; escopo = todos os KPIs com meta). Faz **uma** pergunta de volta só quando nem período nem KPI são resolvíveis.
 - **Duas tools, naturezas distintas:** `run_sql` (Postgres, somente leitura, com guardrails) e `search(collection, query, filters)` — **tool única parametrizada pela coleção** (`camada_semantica` | `diagnostico` | `prescricao`), com a coleção escolhida pelo nó do grafo, não por um laço do LLM.
 - **Janelas temporais:** tendência = últimos **6 meses**; sazonal = mesmo mês-alvo nos **2 anos anteriores**. Parametrizável; defaults cravados.
-- **LLM:** default Claude — tier forte (planejamento/síntese), tier rápido (SQL/roteamento), embedding dedicado na ingestão. Arquitetura provider-agnostic (LangChain), modelo trocável.
+- **LLM:** default Claude — tier forte (planejamento/síntese), tier rápido (SQL/roteamento), embedding dedicado para a query em runtime. Arquitetura provider-agnostic (LangChain), modelo trocável.
 
-**Modelo de dados (já existente — DDL em `seed/schema.sql`, ingestão em `seed/ingest.py`)**
-- **Postgres, dois mundos separados.** Schema de **negócio** (somente leitura para o agente), já populado com ~5 anos: dimensões `regioes`, `canais`, `categorias`, `produtos`, `clientes`; fatos `pedidos`, `itens_pedido` e `sessoes_diarias` (tráfego — denominador da conversão); e `metas` (OKRs por `ano`/`mes`/`kpi`/dimensão, que definem "abaixo da meta"). Schema de **harness** (sessões, runs, chamadas de tool, traces, golden datasets) — leitura/escrita.
-- **Qdrant, três coleções por intenção e ciclo de vida** (indexadas por `seed/ingest.py`): `camada_semantica` (definições de KPI + exemplos pergunta→SQL; consultada antes da query), `diagnostico` (explica o porquê; após o SQL, por KPI fraco), `prescricao` (o que fazer; filtrada por `kpi_alvo`; guarda também o histórico de relatórios anteriores).
-- **Payload das coleções de enriquecimento (§8.3):** `tipo`, `subtipo`, `periodo_referencia` (`YYYY-MM`), `ano`, `mes`, `data_ingestao`, `regiao`, `produto`, `canal`, `fonte`; `prescricao` adiciona `kpi_alvo` e `resultado`. **`periodo_referencia` ≠ `data_ingestao`** e o filtro de enriquecimento nunca usa a data de upload.
+**Estrutura dos dados (referência — já carregados, sem ingestão neste projeto)**
+- **Postgres, dois mundos separados.** Schema de **negócio** (somente leitura para o agente),
+  populado com ~5 anos — DDL de referência em `schema.sql`: dimensões `regioes`, `canais`,
+  `categorias`, `produtos`, `clientes`; fatos `pedidos`, `itens_pedido` e `sessoes_diarias`
+  (tráfego — denominador da conversão); e `metas` (OKRs por `ano`/`mes`/`kpi`/dimensão, que definem
+  "abaixo da meta"). Schema de **harness** (sessões, runs, chamadas de tool, traces, golden datasets)
+  — leitura/escrita pelo app, e leitura pelo agente avaliador.
+- **Qdrant, três coleções por intenção e ciclo de vida** (já indexadas a partir de `seed/corpus/`):
+  `camada_semantica` (definições de KPI + exemplos pergunta→SQL; consultada antes da query),
+  `diagnostico` (explica o porquê; consultada após o SQL, por KPI fraco), `prescricao` (o que fazer;
+  filtrada por `kpi_alvo`; guarda também o histórico de relatórios anteriores).
+- **Payload das coleções de enriquecimento (referência):** `tipo`, `subtipo`,
+  `periodo_referencia` (`YYYY-MM`), `ano`, `mes`, `data_ingestao`, `regiao`, `produto`, `canal`,
+  `fonte`; `prescricao` adiciona `kpi_alvo` e `resultado` (positivo/nulo/negativo). Atenção em
+  runtime: **`periodo_referencia` ≠ `data_ingestao`** e o filtro de enriquecimento nunca usa a data
+  de carga — sempre `periodo_referencia` + dimensão + `kpi_alvo`.
 
-**Dados e avaliação (EDD)**
-- **Dados reais, já persistidos:** ~5 anos de vendas/metas de um e-commerce de varejo (multicanal, multi-região, clientes recorrentes, com sazonalidade) no Postgres; corpus qualitativo no Qdrant. O app **consome** esses dados — não os produz.
-- **Situações rastreáveis:** nos dados, um padrão quantitativo (ex.: recompra caindo numa região) liga-se a documentos de `diagnostico` (o porquê) e de `prescricao` com `resultado` (o que já se tentou — incluindo casos que funcionaram e que não funcionaram); é o que o agente contrasta.
-- **Avaliação (EDD):** golden dataset de `(pergunta → SQL esperado → fontes esperadas → recomendação esperada)` derivado dessas situações, versionado fora do backend (YAML/JSON); runner pytest como gate de aceite (execution accuracy + faithfulness + answer relevancy).
+**Dados e avaliação**
+- **Dados reais, já persistidos:** ~5 anos de vendas/metas de um e-commerce de varejo (multicanal,
+  multi-região, clientes recorrentes, com sazonalidade) no Postgres; corpus qualitativo no Qdrant.
+  O app **consome** esses dados — não os produz nem os carrega.
+- **Situações rastreáveis:** nos dados, um padrão quantitativo (ex.: recompra caindo numa região)
+  liga-se a documentos de `diagnostico` (o porquê) e de `prescricao` com `resultado` (o que já se
+  tentou — incluindo casos que funcionaram e que não funcionaram); é o que o agente contrasta.
+- **Avaliação:** golden dataset de `(pergunta → tools esperadas → SQL esperado → fontes esperadas →
+  recomendação esperada)` derivado dessas situações, versionado fora do backend (YAML/JSON);
+  **executado e julgado pelo agente avaliador em `.claude/agents`** (ver *Testing Decisions*), não
+  por um script de evals.
 
 **API e fluxo (contratos de alto nível)**
-- Endpoint de chat recebe pergunta NL + contexto de sessão e devolve relatório (texto + gráficos) com fontes citadas; relatório e gráficos persistidos no MinIO.
-- Ingestão expõe operações de upload (→ MinIO) e indexação (→ Qdrant) e carga de vendas/metas (→ Postgres) — sem agente.
+- Endpoint de chat recebe pergunta NL + contexto de sessão e devolve relatório (texto + gráficos)
+  com fontes citadas; relatório e gráficos persistidos no MinIO.
+- **Sem endpoints de ingestão/carga.** O app não expõe upload de corpus nem seed de vendas/metas —
+  os stores chegam pré-populados.
 
 ## Testing Decisions
 
 **O que é um bom teste aqui:** testa comportamento externo (pergunta → relatório, fonte citada, SQL read-only respeitado), não detalhes de implementação dos nós. Prefira o **seam mais alto** possível; só desça quando precisar isolar um guardrail ou um filtro.
 
 **Seams (do mais alto ao mais baixo):**
-1. **HTTP (end-to-end):** `POST /chat` via httpx — pergunta NL entra, relatório + fontes saem. É onde o golden dataset roda ponta-a-ponta.
+1. **HTTP (end-to-end):** `POST /chat` via httpx — pergunta NL entra, relatório + fontes saem. É onde o golden dataset roda ponta-a-ponta (acionado pelo agente avaliador).
 2. **Grafo (invoke):** invocar o grafo LangGraph diretamente com a pergunta já reescrita → estado final (relatório, fontes, SQL executado). Pipeline sem HTTP; bom para execution accuracy e faithfulness por caso.
-3. **Tools:** `run_sql` contra Postgres de teste seedado (assert resultset + guardrails: read-only, allowlist, `LIMIT`, timeout); `search` contra Qdrant de teste seedado (assert que o filtro dimensão+tempo+`kpi_alvo` recupera as fontes certas e exclui o ruído).
-4. **Ingestão:** pipeline determinístico (doc → chunk → embed → payload §8.3); assert da metadata e da separação `periodo_referencia` ≠ `data_ingestao`. Sem agente.
-5. **EDD (aceite):** `evals/run_evals.py` sobre o golden dataset — **execution accuracy** (determinística: compara resultset do SQL gerado com o esperado), **faithfulness** e **answer relevancy** (LLM-as-judge). É o gate de aceite de feature, rodado sob `/run-evals`, não no hook de cada edição.
+3. **Tools:** `run_sql` contra Postgres de teste com snapshot read-only (assert resultset + guardrails: read-only, allowlist, `LIMIT`, timeout); `search` contra Qdrant de teste com snapshot (assert que o filtro dimensão+tempo+`kpi_alvo` recupera as fontes certas e exclui o ruído).
 
-**Quais módulos são testados:** tools (`run_sql`, `search`), nós do grafo (em isolamento e via invoke), pipeline de ingestão, e o agente end-to-end pelo golden dataset. O gate rápido (ruff + mypy + pytest) roda a cada edição via hook; os evals rodam sob comando.
+**Aceite — agente avaliador em `.claude/agents` (substitui o script de evals):**
+- O **agent harness** tem duas partes: (a) o **schema de harness** no Postgres, que grava cada run
+  (sessão, run, tools chamadas, SQL executado, fontes recuperadas, relatório final, traces espelhando
+  o Langfuse) — o registro observável do *que o agente fez*; e (b) o **agente avaliador**,
+  um subagente do Claude Code em `.claude/agents/avaliador-vendas.md`.
+- **O que o agente avaliador faz, antes de subir o código:** carrega o golden dataset (YAML/JSON
+  versionado fora do backend); para cada caso, **roda o código** invocando o agente (pelo seam de
+  grafo `invoke` ou por `POST /chat`); lê o run registrado no schema de harness (+ Langfuse) e julga:
+    - **tools invocadas == esperadas** (ex.: `run_sql` e depois `search` nas coleções certas com os
+      filtros certos — incluindo `periodo_referencia` + dimensão + `kpi_alvo`, nunca `data_ingestao`);
+    - **execution accuracy** (determinística): compara o resultset do SQL gerado com o esperado;
+    - **faithfulness/grounding**: toda recomendação prescritiva amarrada a uma fonte recuperada;
+      afirmação prescritiva sem fonte = falha;
+    - **answer relevancy**: a resposta endereça a pergunta.
+- **Saída:** veredito **pass/fail por caso + agregado** e um resumo das regressões. O gate falha se
+  qualquer checagem dura quebrar (read-only desrespeitado, fonte ausente, execution accuracy abaixo
+  do limiar). É acionado sob comando (manual ou na CI antes do deploy), **não** no hook de cada edição.
+- **Por que subagente e não script:** centraliza o julgamento (LLM-as-judge) e a orquestração da
+  execução num artefato do Claude Code, reproduzível pelo time como passo de "rodar antes de subir",
+  sem manter um runner Python paralelo.
 
-**Prior art:** httpx + pytest para a camada HTTP (padrão da skill `fastapi-patterns`); fixtures de Postgres/Qdrant de teste seedados pelas mesmas rotinas de `/seed-data`.
+**Quais módulos são testados:** tools (`run_sql`, `search`) e nós do grafo (em isolamento e via invoke) pelo pytest; e o agente end-to-end pelo golden dataset, via o agente avaliador. O gate rápido (ruff + mypy + pytest) roda a cada edição via hook; a avaliação do golden dataset roda sob comando, pelo agente em `.claude/agents`.
+
+**Prior art:** httpx + pytest para a camada HTTP e de tools (padrão da skill `fastapi-patterns`); fixtures de Postgres/Qdrant de teste apontando para snapshots read-only pré-populados (não há rotina de seed no app).
 
 ## Out of Scope
 
-- Ingestão automática/contínua a partir de ERP/CRM — o corpus é mantido por upload manual.
+- **Ingestão / carga de qualquer tipo** — não há seed nem pipeline de ingestão neste projeto; os stores (Postgres e Qdrant) chegam pré-populados e a estrutura é apenas documentada para referência.
+- Ingestão automática/contínua a partir de ERP/CRM e upload de corpus pela aplicação.
 - Multi-tenant / múltiplas empresas.
 - Ações com efeito colateral (disparar campanha, alterar preço) — o agente só recomenda.
 - Escrita nos dados de negócio — toda interação com o Postgres de vendas é somente leitura.
