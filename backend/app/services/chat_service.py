@@ -107,16 +107,39 @@ async def stream(preparo: PreparoTurno) -> AsyncIterator[str]:
             elif tipo == "final":
                 estado = dado
 
+        # Tools invocadas no run (run_sql + search) — o avaliador (#26) checa coleções +
+        # filtros a partir daqui. Ordem contínua entre as duas tools.
         sql_log = estado.get("sql_log", [])
-        for ordem, sql in enumerate(sql_log):
+        ordem = 0
+        for sql in sql_log:
             await repo.registrar_tool_call(run_id, ordem, "run_sql", sql_text=sql)
+            ordem += 1
+        for chamada in estado.get("search_log", []):
+            await repo.registrar_tool_call(run_id, ordem, "search", args=chamada)
+            ordem += 1
         for fonte in estado.get("fontes", []):
             await repo.registrar_fonte(
-                run_id, fonte.get("colecao", ""), fonte=fonte.get("fonte"), payload=fonte
+                run_id,
+                fonte.get("colecao", ""),
+                fonte=fonte.get("fonte"),
+                payload=fonte,
+                score=fonte.get("score"),
             )
 
         relatorio = estado.get("relatorio", "")
         await repo.finalizar_run(run_id, relatorio)
+        # #26: saida estruturada do run (achados + recomendacoes com fonte), para o
+        # avaliador julgar faithfulness/relevancy direto do harness.
+        await repo.registrar_trace(
+            run_id,
+            "saida",
+            {
+                "periodo": estado.get("periodo", ""),
+                "premissas": estado.get("premissas", []),
+                "achados": estado.get("achados", []),
+                "recomendacoes": estado.get("recomendacoes", []),
+            },
+        )
 
         grafico = charts.spec_gaps(estado.get("achados", []), estado.get("periodo", ""))
         artefatos = await storage.persistir_artefatos(run_id, relatorio, grafico)

@@ -64,11 +64,14 @@ class FakeHarness:
         return None
 
     async def registrar_fonte(
-        self, run_id: str, colecao: str, fonte: Any = None, payload: Any = None
+        self, run_id: str, colecao: str, fonte: Any = None, payload: Any = None, score: Any = None
     ) -> None:
         if colecao == "prescricao" and fonte:
             sessao = self.run_to_sessao.get(run_id, "")
             self.fontes_por_sessao.setdefault(sessao, []).append(fonte)
+
+    async def registrar_trace(self, run_id: str, evento: str, dados: Any = None) -> None:
+        return None
 
     async def finalizar_run(self, run_id: str, relatorio: str, status: str = "concluido") -> None:
         self.runs[run_id]["relatorio"] = relatorio
@@ -143,6 +146,7 @@ async def test_dialogo_dois_turnos_reescreve_e_suprime(monkeypatch: pytest.Monke
         "fontes_prescricao_da_sessao",
         "registrar_tool_call",
         "registrar_fonte",
+        "registrar_trace",
         "finalizar_run",
     ):
         monkeypatch.setattr(svc.repo, nome, getattr(harness, nome))

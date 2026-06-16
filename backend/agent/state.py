@@ -25,4 +25,5 @@ class ChatState(TypedDict, total=False):
     fontes: Annotated[list[dict[str, Any]], operator.add]  # diagnostico/prescricao recuperados
     recomendacoes: Annotated[list[dict[str, Any]], operator.add]  # cada uma amarrada a uma fonte
     sql_log: Annotated[list[str], operator.add]
+    search_log: Annotated[list[dict[str, Any]], operator.add]  # chamadas search: colecao+filtros (#26)
     relatorio: str

@@ -94,20 +94,37 @@ async def registrar_tool_call(
     tool: str,
     sql_text: str | None = None,
     resultado: Any | None = None,
+    args: Any | None = None,
 ) -> None:
+    # `args` guarda os parametros da tool (ex.: search -> colecao + filtros), para o
+    # avaliador checar "tools invocadas == esperadas" (coleções + filtros) a partir do run.
     async with _admin_engine().begin() as conn:
         await conn.execute(
             text(
-                "INSERT INTO harness.tool_calls (run_id, ordem, tool, sql_text, resultado) "
-                "VALUES (:r, :o, :t, :s, cast(:res AS jsonb))"
+                "INSERT INTO harness.tool_calls (run_id, ordem, tool, args, sql_text, resultado) "
+                "VALUES (:r, :o, :t, cast(:a AS jsonb), :s, cast(:res AS jsonb))"
             ),
             {
                 "r": run_id,
                 "o": ordem,
                 "t": tool,
+                "a": json.dumps(args) if args is not None else None,
                 "s": sql_text,
                 "res": json.dumps(resultado) if resultado is not None else None,
             },
+        )
+
+
+async def registrar_trace(run_id: str, evento: str, dados: Any | None = None) -> None:
+    """Grava um evento estruturado do run (ex.: saida final achados+recomendacoes), para
+    o avaliador julgar faithfulness/relevancy direto do `harness`."""
+    async with _admin_engine().begin() as conn:
+        await conn.execute(
+            text(
+                "INSERT INTO harness.traces (run_id, evento, dados) "
+                "VALUES (:r, :e, cast(:d AS jsonb))"
+            ),
+            {"r": run_id, "e": evento, "d": json.dumps(dados) if dados is not None else None},
         )
 
 

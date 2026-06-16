@@ -71,6 +71,7 @@ async def test_post_chat_stream_e_persiste_artefatos(monkeypatch: Any) -> None:
     monkeypatch.setattr(svc.repo, "criar_run", fake_criar_run)
     monkeypatch.setattr(svc.repo, "registrar_tool_call", fake_noop)
     monkeypatch.setattr(svc.repo, "registrar_fonte", fake_noop)
+    monkeypatch.setattr(svc.repo, "registrar_trace", fake_noop)
     monkeypatch.setattr(svc.repo, "finalizar_run", fake_noop)
     monkeypatch.setattr(svc.storage, "persistir_artefatos", fake_persistir)
 

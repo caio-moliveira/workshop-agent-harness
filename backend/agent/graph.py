@@ -204,6 +204,9 @@ async def _no_enriquecer(state: ChatState) -> dict[str, Any]:
     """Por KPI fraco: diagnostico (porque) -> prescricao (o que fazer). Data-driven."""
     fontes: list[dict[str, Any]] = []
     recomendacoes: list[dict[str, Any]] = []
+    # #26: registra cada chamada `search` (colecao + filtros + n_hits) para o run gravado
+    # expor "tools invocadas" ao avaliador (nunca `data_ingestao` — garantido por SearchFilters).
+    search_log: list[dict[str, Any]] = []
     # #24: prescricoes ja recomendadas em turnos anteriores da sessao nao se repetem.
     excluidas = set(state.get("fontes_excluidas", []))
     for achado in state.get("achados", []):
@@ -218,6 +221,7 @@ async def _no_enriquecer(state: ChatState) -> dict[str, Any]:
             )
         except SearchError:
             diag = []
+        search_log.append({"colecao": "diagnostico", "filtros": dim_kwargs, "n_hits": len(diag)})
         try:
             # prescricao e filtrada por kpi_alvo (regra/PRD); a dimensao entra na query
             # semantica, pois o corpus de prescricao e dimensionado por canal/categoria.
@@ -226,6 +230,7 @@ async def _no_enriquecer(state: ChatState) -> dict[str, Any]:
             )
         except SearchError:
             presc = []
+        search_log.append({"colecao": "prescricao", "filtros": {"kpi_alvo": kpi}, "n_hits": len(presc)})
 
         for hit in diag:
             fontes.append(
@@ -234,6 +239,7 @@ async def _no_enriquecer(state: ChatState) -> dict[str, Any]:
                     "dimensao": dim,
                     "fonte": hit.fonte,
                     "resumo": _resumo(hit.payload),
+                    "score": hit.score,
                 }
             )
         for hit in presc:
@@ -246,6 +252,7 @@ async def _no_enriquecer(state: ChatState) -> dict[str, Any]:
                     "dimensao": dim,
                     "fonte": hit.fonte,
                     "resumo": _resumo(hit.payload),
+                    "score": hit.score,
                 }
             )
             # Grounding: cada recomendacao carrega a fonte de onde veio.
@@ -258,7 +265,7 @@ async def _no_enriquecer(state: ChatState) -> dict[str, Any]:
                     "fonte": hit.fonte,
                 }
             )
-    return {"fontes": fontes, "recomendacoes": recomendacoes}
+    return {"fontes": fontes, "recomendacoes": recomendacoes, "search_log": search_log}
 
 
 async def _no_relatorio(state: ChatState) -> dict[str, Any]:
