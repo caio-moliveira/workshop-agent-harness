@@ -35,16 +35,22 @@ Mantenha enxuto (idealmente < 500 tokens). É um índice de fatos duráveis, nã
 
 ## `rules/<area>.md` — "o que lembrar ao mexer nesta área?"
 
-Uma regra curta, path-scoped. Frontmatter opcional para escopo por caminho.
+Uma regra curta, carregada nativamente de `.claude/rules/`. **Sem `paths:`** ela vale a sessão
+inteira; **com `paths:`** (globs) carrega só quando o agente toca arquivos daquela área — prefira
+isso para manter o contexto enxuto.
 
 ```markdown
 ---
 description: Regras ao editar o backend
+paths:
+  - "backend/**"
 ---
 - Toda tool nova segue o contrato de `harness/tools/base.py`.
 - SQL passa pelo guardrail antes de executar (read-only, allowlist, LIMIT, timeout).
 - Não edite `infra/db/migrations/` sem revisão humana.
 ```
+
+Regra que vale o projeto todo (invariante de área única) é só omitir o `paths:`.
 
 ---
 
@@ -81,6 +87,10 @@ Rode `python evals/run_evals.py`, leia o resultado e responda apenas com o resum
 quais evals falharam e por quê. Não tente corrigir o código.
 ```
 
+**Boas práticas (Anthropic):** `description` em 3ª pessoa com gatilho ("Use quando…"); `tools` no
+mínimo necessário (um avaliador é read-only: `Read, Grep, Bash`); **uma responsabilidade só**;
+declare o formato de saída ("devolva só o veredito") e o que NÃO fazer ("não corrija código").
+
 ---
 
 ## `commands/<nome>.md` — "qual sequência de passos eu repito?"
@@ -98,30 +108,49 @@ description: Implementa uma feature seguindo o Feature Flow
 5. Abra um resumo do que mudou.
 ```
 
+**Boas práticas (Anthropic):** `description` numa linha; corpo = passos numerados usando
+`$ARGUMENTS`; delegue a skills/subagentes em vez de repetir lógica; termine sempre num gate
+(validação) ou num resumo.
+
 ---
 
 ## `settings.json` — "o que sempre roda? o que o agente pode fazer sozinho?"
 
-Hooks (gates de validação) + permissões (perímetro). Estrutura de hooks por evento e matcher.
+Hooks (gates de validação) + permissões (perímetro), e opcionalmente `env`/`model` do projeto.
+Permissões têm três tiers: `allow`, `ask` (pede confirmação) e `deny`.
 
 ```json
 {
+  "model": "sonnet",
+  "env": { "PYTHONUNBUFFERED": "1" },
   "permissions": {
     "allow": ["Bash(npm test:*)", "Bash(ruff:*)", "Read", "Edit"],
+    "ask": ["Bash(git push:*)"],
     "deny": ["Bash(rm -rf:*)", "Edit(infra/db/migrations/**)"]
   },
   "hooks": {
+    "PreToolUse": [
+      { "matcher": "Bash", "hooks": [{ "type": "command", "command": "scripts/guard.sh" }] }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write",
-        "hooks": [
-          { "type": "command", "command": "ruff check --fix . && mypy . && pytest -q" }
-        ]
+        "hooks": [{ "type": "command", "command": "ruff check --fix . && mypy . && pytest -q" }]
       }
+    ],
+    "SessionStart": [
+      { "hooks": [{ "type": "command", "command": "scripts/session_setup.sh" }] }
     ]
   }
 }
 ```
+
+- **`PreToolUse`** roda *antes* da ferramenta e pode **bloquear** (exit code 2 nega a ação) —
+  guardrail determinístico (ex.: barrar comando perigoso). **`PostToolUse`** roda depois (gate de
+  lint/types/testes). **`SessionStart`** prepara contexto no início. Há outros eventos
+  (UserPromptSubmit, Stop, PreCompact…); use só os que o projeto precisa.
+- **`settings.local.json`** (ao lado, gitignored, mesmo formato) guarda *overrides pessoais* de
+  máquina — não versione segredos nem preferências individuais no `settings.json` do projeto.
 
 ---
 

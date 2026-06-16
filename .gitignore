@@ -1,3 +1,13 @@
 .venv/
 .env
 uv.lock
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Dataset sintético regenerável (seed/generate.py é a fonte da verdade)
+seed/data/

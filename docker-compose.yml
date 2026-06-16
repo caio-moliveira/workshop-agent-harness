@@ -1,0 +1,88 @@
+# Bússola — esqueleto andante (issue #1).
+# Cadeia: nginx (único exposto) -> api (FastAPI) -> postgres (vazio).
+# RNF-05: sobe via `docker compose up -d`. Antes: `cp .env.example .env` e ajuste os segredos.
+# Stores: postgres (schema negocio via seed/), qdrant (3 coleções) e minio (corpus bruto).
+
+name: bussola
+
+services:
+  postgres:
+    image: postgres:17
+    container_name: bussola-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-bussola}
+      POSTGRES_USER: ${POSTGRES_USER:-bussola}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bussola} -d ${POSTGRES_DB:-bussola}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  qdrant:
+    image: qdrant/qdrant:latest          # (pinar versão em produção — RNF-05)
+    container_name: bussola-qdrant
+    restart: unless-stopped
+    ports:
+      - "${QDRANT_PORT:-6333}:6333"       # REST/HTTP
+      - "${QDRANT_GRPC_PORT:-6334}:6334"  # gRPC
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  minio:
+    image: minio/minio:latest            # (pinar versão em produção — RNF-05)
+    container_name: bussola-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "${MINIO_PORT:-9000}:9000"           # API S3
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"   # Console web
+    volumes:
+      - minio_data:/data
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: bussola-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-bussola}:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}@postgres:5432/${POSTGRES_DB:-bussola}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # sem porta publicada: o acesso externo é só pelo nginx (prova o hop da issue #1)
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: bussola-nginx
+    restart: unless-stopped
+    volumes:
+      # monta o diretório (não o arquivo único): evita o erro de bind-mount ao recriar no Windows
+      - ./infra/nginx:/etc/nginx/conf.d:ro
+    ports:
+      - "${NGINX_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  pg_data:
+  qdrant_data:
+  minio_data:
