@@ -28,6 +28,15 @@ class Settings(BaseSettings):
     embed_model: str = "text-embedding-3-large"
     embed_dim: int = 3072
 
+    # MinIO (issue #23): persistencia dos artefatos do run (relatorio + grafico). O
+    # bucket `corpus` (pre-populado pelo seed) e sagrado; gravamos em bucket proprio.
+    # No container, o compose sobrescreve MINIO_ENDPOINT para o host interno `minio:9000`.
+    minio_endpoint: str = "localhost:9000"
+    minio_root_user: str = "minioadmin"
+    minio_root_password: str = "minioadmin"
+    minio_bucket_relatorios: str = "relatorios"
+    minio_secure: bool = False
+
     # LLM (Claude via LangChain). Opus 4.8 nao aceita temperature/top_p — nao os definimos.
     anthropic_api_key: str = ""
     llm_model_forte: str = "claude-opus-4-8"

@@ -11,6 +11,7 @@ amarrada a uma `fonte` rastreavel. Sem fonte, nao ha recomendacao.
 from __future__ import annotations
 
 import json
+from collections.abc import AsyncIterator
 from typing import Any
 
 from langchain_core.messages import BaseMessage
@@ -304,3 +305,25 @@ GRAPH = build_graph()
 async def run_chat(pergunta: str, callbacks: list[Any] | None = None) -> dict[str, Any]:
     config = {"callbacks": callbacks} if callbacks else {}
     return await GRAPH.ainvoke({"pergunta": pergunta}, config=config)
+
+
+async def run_chat_stream(
+    pergunta: str, callbacks: list[Any] | None = None
+) -> AsyncIterator[tuple[str, Any]]:
+    """Stream do grafo (issue #23). Emite `("progresso", <no>)` a cada no concluido e,
+    ao final, `("final", <estado_completo>)`.
+
+    Usa `astream` com dois modos: `updates` (qual no acabou) e `values` (estado
+    acumulado). O ultimo snapshot de `values` e o estado final do run.
+    """
+    config = {"callbacks": callbacks} if callbacks else {}
+    final: dict[str, Any] = {}
+    async for modo, chunk in GRAPH.astream(
+        {"pergunta": pergunta}, config=config, stream_mode=["updates", "values"]
+    ):
+        if modo == "updates":
+            for no in chunk:
+                yield "progresso", no
+        elif modo == "values":
+            final = chunk
+    yield "final", final
