@@ -1,0 +1,61 @@
+# Bússola — esqueleto andante (issue #1).
+# Cadeia: nginx (único exposto) -> api (FastAPI) -> postgres (vazio).
+# RNF-05: sobe via `docker compose up -d`. Antes: `cp .env.example .env` e ajuste os segredos.
+# Qdrant/MinIO e os schemas negocio/harness entram em issues posteriores.
+
+name: bussola
+
+services:
+  postgres:
+    image: postgres:17
+    container_name: bussola-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-bussola}
+      POSTGRES_USER: ${POSTGRES_USER:-bussola}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bussola} -d ${POSTGRES_DB:-bussola}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: bussola-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-bussola}:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}@postgres:5432/${POSTGRES_DB:-bussola}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # sem porta publicada: o acesso externo é só pelo nginx (prova o hop da issue #1)
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: bussola-nginx
+    restart: unless-stopped
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "${NGINX_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  pg_data:

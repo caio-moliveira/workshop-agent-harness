@@ -17,6 +17,11 @@ import shutil
 import subprocess
 import sys
 
+# Saída UTF-8 mesmo em consoles legados (Windows cp1252) — senão os símbolos (→ • ✗) quebram o gate.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+
 SOURCE_DIRS = ["backend", "ingestion", "evals", "seed"]
 
 
