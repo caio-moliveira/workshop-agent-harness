@@ -1,15 +1,17 @@
-"""API FastAPI da Bussola (issue #15: esqueleto andante).
+"""API FastAPI da Bussola.
 
-Por enquanto so o `/health`, que prova o hop nginx -> api -> postgres. As rotas de
-negocio (`/chat`) chegam na issue #19.
+`/health` prova o hop nginx -> api -> postgres (#15). `/chat` (#19) recebe a
+pergunta NL e devolve o relatorio do grafo analitico.
 """
 
 from fastapi import Depends, FastAPI, Response, status
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.db import get_engine, ping_db
+from app.routers import chat
 
 app = FastAPI(title="Bussola API")
+app.include_router(chat.router)
 
 
 @app.get("/health")

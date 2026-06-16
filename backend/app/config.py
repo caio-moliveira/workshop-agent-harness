@@ -28,6 +28,16 @@ class Settings(BaseSettings):
     embed_model: str = "text-embedding-3-large"
     embed_dim: int = 3072
 
+    # LLM (Claude via LangChain). Opus 4.8 nao aceita temperature/top_p — nao os definimos.
+    anthropic_api_key: str = ""
+    llm_model_forte: str = "claude-opus-4-8"
+    llm_model_rapido: str = "claude-haiku-4-5"
+
+    # Langfuse (cloud, opcional). Sem as chaves, o tracing fica desligado e nao quebra o fluxo.
+    langfuse_public_key: str = ""
+    langfuse_secret_key: str = ""
+    langfuse_host: str = "https://cloud.langfuse.com"
+
     @property
     def agente_ro_url(self) -> str:
         """URL async com as credenciais read-only do agente, derivada da DATABASE_URL."""

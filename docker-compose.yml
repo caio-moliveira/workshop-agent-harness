@@ -54,8 +54,13 @@ services:
       dockerfile: backend/Dockerfile
     container_name: bussola-api
     restart: unless-stopped
+    # Chaves (ANTHROPIC/OPENAI/AGENTE_RO/Langfuse) vêm do .env. `environment` abaixo
+    # tem precedência sobre env_file e fixa os hosts internos da rede do compose.
+    env_file:
+      - .env
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-bussola}:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}@postgres:5432/${POSTGRES_DB:-bussola}
+      QDRANT_URL: http://qdrant:6333
     depends_on:
       postgres:
         condition: service_healthy
