@@ -7,3 +7,7 @@
 .ruff_cache
 backend/tests
 .env
+node_modules
+frontend/node_modules
+frontend/dist
+frontend/.vite
