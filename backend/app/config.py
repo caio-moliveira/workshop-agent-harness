@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     langfuse_secret_key: str = ""
     langfuse_host: str = "https://cloud.langfuse.com"
 
+    # Janelas temporais do agente (PRD/D7): defaults cravados, parametrizaveis.
+    janela_tendencia_meses: int = 6
+    janela_sazonal_anos: int = 2
+
     @property
     def agente_ro_url(self) -> str:
         """URL async com as credenciais read-only do agente, derivada da DATABASE_URL."""

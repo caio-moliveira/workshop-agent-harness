@@ -14,7 +14,8 @@ from typing_extensions import TypedDict
 
 class ChatState(TypedDict, total=False):
     pergunta: str
-    periodo: str  # YYYY-MM resolvido
+    periodo: str  # YYYY-MM alvo (mes atual + 1)
+    mes_atual: str  # YYYY-MM do ultimo mes com dados
     kpis_foco: list[str]
     achados: Annotated[list[dict[str, Any]], operator.add]
     sql_log: Annotated[list[str], operator.add]
