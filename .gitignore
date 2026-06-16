@@ -11,3 +11,9 @@ __pycache__/
 
 # Dataset sintético regenerável (seed/generate.py é a fonte da verdade)
 seed/data/
+
+# Harness do agente e docs (mantidos locais; não versionar)
+.claude/
+docs/
+CLAUDE.md
+HANDOFF.md
