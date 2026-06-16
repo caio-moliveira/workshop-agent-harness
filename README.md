@@ -1,110 +1,135 @@
-# Agente Analítico de Vendas
+# Agente Analítico de Vendas — *Bússola*
 
 Assistente agêntico que costura **text-to-SQL** (Postgres, somente leitura) com **recuperação
 qualitativa** (Qdrant) para gerar **relatórios de melhoria de vendas fundamentados** — cruzando o
 *o quê* (números) com o *porquê* (voz do cliente) e o *o que fazer* (playbooks que já funcionaram).
-Projeto de **workshop conduzido como produto de mundo real**.
 
-**Documentos-chave:** `ideia.md` (rascunho) · `DECISOES.md` (decisões D1–D11) · `PRD.md` (PRD
-consolidado) · `docs/adr/` (ADRs) · `.claude/` + `CLAUDE.md` (harness do agente de código).
+Projeto de **workshop conduzido como produto de mundo real**. O foco não é só o app: é o **método**
+— sair de uma ideia solta e chegar em issues prontas para um agente implementar, tudo conduzido por
+um **agent harness baseado em skills**.
 
----
-
-## Como chegamos até aqui (passo a passo)
-
-Da instalação das skills até o PRD, tudo conduzido por um **agent harness** baseado em skills.
-
-### 0. Instalação das skills
-
-**Fontes das skills (GitHub):**
-
-- **Matt Pocock** — skills de processo (`grill-me`, `to-prd`, `to-issues`, `setup-matt-pocock-skills`, `tdd`, `diagnose`, `handoff`…): https://github.com/mattpocock/skills
-- **LangChain / LangGraph / Deep Agents** (`langchain-*`, `langgraph-*`, `deep-agents-*`, `ecosystem-primer`): https://github.com/langchain-ai/langchain-skills
-- **React** (`react`, `react-ui-patterns`): https://github.com/sickn33/antigravity-awesome-skills · https://github.com/lobehub/lobehub
-- **FastAPI patterns**: https://github.com/affaan-m/ECC
-- **UI/UX Pro Max**: https://github.com/nexu-io/open-design
-- **harness-architect** — skill *própria* da nossa equipe (sem fonte externa; não está no
-  `skills-lock.json`): codifica nossos requisitos de projeto e padrões de desenvolvimento.
-
-### 1. `/grill-me` — nivelar o entendimento
-
-```text
-/grill-me sobre meu @ideia.md para nivelar entendimento e organizar o projeto
-```
-
-- **Input:** `ideia.md` (rascunho do PRD).
-- **O que rolou:** entrevista dirigida, uma pergunta por vez, descendo a árvore de decisões
-  (propósito → domínio → dados → arquitetura → interface), cada pergunta com recomendação.
-- **Output:** **`DECISOES.md`** com as decisões fechadas **D1–D11** (workshop-como-projeto-real,
-  e-commerce genérico, 5–8 narrativas plantadas, grafo determinístico, chat com reescrita
-  contextual, comportamento sob ambiguidade, janelas 6m/2anos, 2 tools, LLM Claude, EDD, latência),
-  encerrando as questões em aberto da seção 15.
-
-### 2. `/harness-architect` — estruturar o `.claude/`
-
-```text
-/harness-architect
-```
-
-- **Skill própria (nossa):** `harness-architect` foi **criada pela nossa equipe** — codifica os
-  requisitos de projeto e os padrões de desenvolvimento do time, garantindo que a estrutura `.claude/`
-  gerada siga *nossos* padrões (não um template genérico). É o ponto central do workshop.
-- **Input:** `ideia.md` + `DECISOES.md`.
-- **O que rolou:** inferiu o máximo do PRD, perguntou só as lacunas (escopo das rules, gate de
-  validação, MCP, orquestração), sintetizou um **Harness Plan** e andaimou o harness.
-- **Output:**
-  - `CLAUDE.md` — invariantes + comandos (lido toda sessão)
-  - `.claude/rules/` — `backend`, `agente`, `ingestao`, `evals`
-  - `.claude/commands/` — `/feature`, `/run-evals`, `/seed-data`
-  - `.claude/agents/eval-runner.md` — subagente de evals em contexto fresco
-  - `.claude/settings.json` — hook de gate + permissões · `scripts/gate.py` — gate rápido
-  - `docs/adr/0001–0003` (decisões contestáveis) · `HANDOFF.md`
-
-### 3. `/to-prd` — consolidar o PRD
-
-```text
-/to-prd
-```
-
-- **Input:** todo o contexto da sessão (`ideia.md` + `DECISOES.md` + harness + ADRs).
-- **O que rolou:** sintetizou o PRD sem nova entrevista e definiu os 5 seams de teste.
-- **Output:** **`PRD.md`** — Problem/Solution, **31 user stories**, Implementation Decisions,
-  Testing Decisions (seams + EDD como gate), Out of Scope e Further Notes.
+> Este README conta **como chegamos até aqui**: o que já estava posto e a cadeia de skills que nos
+> levou da *ideia* → *PRD* → *harness* → *issues* → *implementação*.
 
 ---
 
-## Próximo passo
+## 1. Antes de tudo — o que já estava posto
 
-### 4. `/to-issues` — registrar as issues no GitHub
+Quatro coisas foram preparadas **antes** de a cadeia de skills começar:
 
-Depois de **commitar o repositório no GitHub** (cria o remote que faltava):
+| O quê | Onde | Estado |
+|---|---|---|
+| **Ingestão dos dados** | `seed/` | ✅ ~5 anos de vendas no Postgres + corpus qualitativo no MinIO/Qdrant, com narrativas plantadas (`seed/NARRATIVAS.md`) |
+| **Stack local (docker-compose)** | `docker-compose.yml` | ✅ `postgres` · `qdrant` · `minio` · `api` (FastAPI) · `nginx` |
+| **Ambiente git** | `.git`, `.gitignore`, `.env.example` | ✅ repositório configurado |
+| **Download das SKILLS** | `skills-lock.json` + `.claude/skills/` | ✅ fontes abaixo |
+
+### Fontes das skills (download)
+
+As skills foram baixadas e travadas em `skills-lock.json` (fonte + `skillPath` + hash de cada uma):
+
+- **Matt Pocock** — skills de processo (`grill-me`, `to-prd`, `to-issues`, `setup-matt-pocock-skills`,
+  `tdd`, `diagnose`, `triage`, `handoff`, `write-a-skill`, `zoom-out`…):
+  <https://github.com/mattpocock/skills>
+- **LangChain / LangGraph / Deep Agents** (`ecosystem-primer`, `langchain-*`, `langgraph-*`,
+  `deep-agents-*`, `managed-deep-agents`, `swarm`): <https://github.com/langchain-ai/langchain-skills>
+- **FastAPI patterns** (`fastapi-patterns`): <https://github.com/affaan-m/ECC>
+- **React** (`react`): <https://github.com/lobehub/lobehub> · **React UI patterns** (`react-ui-patterns`):
+  <https://github.com/sickn33/antigravity-awesome-skills>
+- **UI/UX Pro Max** (`ui-ux-pro-max`): <https://github.com/nexu-io/open-design>
+
+> **`harness-architect` é skill _própria_ da nossa equipe.** Não veio de fonte externa e por isso
+> **não está no `skills-lock.json`** — ela codifica os nossos requisitos de projeto e padrões de
+> desenvolvimento, garantindo que o `.claude/` gerado siga *o nosso* padrão (não um template genérico).
+> É o ponto central do workshop.
+
+---
+
+## 2. O caminho da ideia às issues (cadeia de skills)
+
+Cada passo abaixo é uma skill (`/comando`). A ordem importa: cada uma consome o artefato da anterior.
+
+| # | Skill | Origem | Entra | Sai | Estado |
+|---|---|---|---|---|---|
+| 0 | `ideia.md` | — | — | a ideia inicial | ✅ |
+| 1 | `/grill-me` | Matt Pocock | `ideia.md` | entendimento afiado | ✅ |
+| 2 | `/to-prd` | Matt Pocock | sessão do grill | **`PRD.md`** | ✅ |
+| 3 | `/harness-architect` | **nossa equipe** | `PRD.md` | harness em `.claude/` | ▶️ agora |
+| 4 | `/setup-matt-pocock-skills` | Matt Pocock | repo + tracker | issue tracker no GitHub | ⬜ |
+| 5 | `/to-issues` | Matt Pocock | `PRD.md` | issues *ready-for-agent* | ⬜ |
+| 6 | implementar | — | issues | código | ⬜ |
+
+**0. `ideia.md` — a semente.** Documento solto com a ideia inicial do produto. Fica **local e não é
+versionado** (não entra no repositório), mas é a origem de toda a cadeia — por isso o mencionamos aqui.
+
+**1. `/grill-me` — interrogar a ideia.** Entrevista o autor sem dó até fechar cada ramo da árvore de
+decisões. Não gera arquivo: afia o entendimento que vai alimentar o PRD.
+
+**2. `/to-prd` — consolidar o PRD.** Sintetiza a conversa num PRD, sem nova entrevista.
+→ **Output: `PRD.md`** — Problem/Solution, user stories, Implementation/Testing Decisions, Out of Scope.
+
+**3. `/harness-architect` — estruturar o `.claude/`** *(skill própria — centro do workshop)*. Lê o
+`PRD.md`, infere o máximo e pergunta só as lacunas (escopo das rules, gate de validação, MCP,
+orquestração); depois andaima o harness. → **Output (a ser gerado):** `CLAUDE.md`, `.claude/rules/`,
+`.claude/commands/`, `.claude/agents/`, `.claude/settings.json` (hook de gate + permissões) e os ADRs
+das decisões contestáveis.
+
+**4. `/setup-matt-pocock-skills` — preparar o tracker.** Depois de **commitar o repositório no GitHub**
+(cria o remote que faltava), configura o GitHub como issue tracker e os labels de triagem.
+
+**5. `/to-issues` — fatiar o PRD.** Quebra o `PRD.md` em issues *ready-for-agent* (fatias verticais
+tracer-bullet), cada uma independentemente "grabbable".
+
+**6. Implementar.** A partir das issues, o ciclo de implementação roda com gate rápido de validação a
+cada edição e os **evals** como gate de aceite.
 
 ```bash
-# 1) configurar o GitHub como issue tracker (escolher tracker = GitHub)
-/setup-matt-pocock-skills
-
-# 2) fatiar o PRD em issues "ready-for-agent" (fatias verticais tracer-bullet)
-/to-issues
+# os próximos comandos do workshop, em ordem:
+/harness-architect            # andaima o .claude/ a partir do PRD.md   (passo 3)
+# ...commit + push do repo para o GitHub...
+/setup-matt-pocock-skills     # escolher tracker = GitHub               (passo 4)
+/to-issues                    # PRD.md -> issues ready-for-agent         (passo 5)
 ```
-
-A partir das issues começam as **implementações** via `/feature <nome>` (SDD → impl → EDD), com o
-gate rápido (ruff + mypy + pytest) a cada edição e os **evals** (`/run-evals`) como gate de aceite.
 
 ---
 
-## Estrutura atual
+## 3. Estrutura atual
+
+Reflete o que está **de fato** no repositório hoje (o harness do passo 3 ainda será gerado):
 
 ```
-CLAUDE.md          # guia do agente: invariantes, stack, comandos
-ideia.md           # rascunho original do PRD
-DECISOES.md        # log de decisões D1–D11
-PRD.md             # PRD consolidado (base para as issues)
-HANDOFF.md         # template de handoff de sessão
-docs/adr/          # ADRs 0001–0003 (os "porquês" contestáveis)
-scripts/gate.py    # gate rápido de validação (roda no hook)
+docker-compose.yml     # stack: postgres, qdrant, minio, api (FastAPI), nginx
+.env.example           # variáveis (copie para .env antes de subir)
+pyproject.toml         # deps (uv) · uv.lock
+PRD.md                 # PRD consolidado (output do /to-prd) — base para as issues
+skills-lock.json       # lock das skills baixadas (fonte + skillPath + hash)
+seed/                  # ingestão: dataset sintético + corpus (offline, sem LLM)
+  schema.sql           #   DDL do schema `negocio` (dimensões + fatos + metas)
+  generate.py          #   gerador determinístico -> CSVs em seed/data/
+  load.py              #   aplica schema + COPY no Postgres (idempotente)
+  corpus/              #   docs .md: diagnostico/ e prescricao/ (frontmatter + corpo)
+  ingest.py            #   corpus -> MinIO + indexa Qdrant (idempotente)
+  NARRATIVAS.md        #   enredo das narrativas plantadas (revisão humana)
+  evals/golden/        #   golden dataset derivado
 .claude/
-  rules/           # regras por área (backend, agente, ingestao, evals)
-  commands/        # /feature, /run-evals, /seed-data
-  agents/          # eval-runner
-  settings.json    # hooks (gate) + permissões
+  skills/              #   skills baixadas + harness-architect (própria)
+                       #   rules/ commands/ agents/ settings.json -> gerados no passo 3
 ```
+
+---
+
+## 4. Rodar localmente (ingestão)
+
+```bash
+cp .env.example .env                          # ajuste os segredos (POSTGRES_PASSWORD etc.)
+docker compose up -d postgres qdrant minio    # stores no ar
+
+# 1) Postgres (vendas + metas)
+uv run python seed/generate.py                # gera seed/data/*.csv (regenerável; não versionado)
+uv run python seed/load.py                    # cria negocio.* e carrega; sanity das narrativas
+
+# 2) Corpus qualitativo (MinIO -> Qdrant)
+uv run python seed/ingest.py                  # upload + embed + index; verifica buscas filtradas
+```
+
+Consoles: **MinIO** em <http://localhost:9001> · **Qdrant** em <http://localhost:6333/dashboard>.
