@@ -27,6 +27,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     run_id: str
     periodo: str
+    premissas: list[str]
     relatorio: str
     achados: list[dict[str, Any]]
     fontes: list[dict[str, Any]]
@@ -53,6 +54,7 @@ async def chat(req: ChatRequest) -> ChatResponse:
     return ChatResponse(
         run_id=run_id,
         periodo=state.get("periodo", ""),
+        premissas=state.get("premissas", []),
         relatorio=state.get("relatorio", ""),
         achados=state.get("achados", []),
         fontes=state.get("fontes", []),

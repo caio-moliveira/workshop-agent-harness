@@ -17,6 +17,9 @@ class ChatState(TypedDict, total=False):
     periodo: str  # YYYY-MM alvo (mes atual + 1)
     mes_atual: str  # YYYY-MM do ultimo mes com dados
     kpis_foco: list[str]
+    premissas: list[str]  # assuncoes declaradas no topo do relatorio (ambiguidade)
+    precisa_clarificar: bool
+    clarificacao: str  # pergunta de volta quando nem periodo nem KPI sao resolviveis
     achados: Annotated[list[dict[str, Any]], operator.add]
     fontes: Annotated[list[dict[str, Any]], operator.add]  # diagnostico/prescricao recuperados
     recomendacoes: Annotated[list[dict[str, Any]], operator.add]  # cada uma amarrada a uma fonte

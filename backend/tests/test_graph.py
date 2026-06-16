@@ -56,6 +56,8 @@ async def test_grafo_completo_com_enriquecimento_e_grounding(
     state = await g.run_chat("como melhorar minhas vendas no proximo mes?")
 
     assert state["periodo"] == "2026-07"
+    assert state["premissas"]  # premissas declaradas (ambiguidade resolvida por default)
+    assert state.get("precisa_clarificar") is False
     assert any(a["dimensao"] == "regiao=Sul" for a in state["achados"])
     # Enriquecimento: fontes de diagnostico + prescricao recuperadas.
     assert any(f["colecao"] == "diagnostico" for f in state["fontes"])
@@ -64,6 +66,26 @@ async def test_grafo_completo_com_enriquecimento_e_grounding(
     assert state["recomendacoes"]
     assert all(r.get("fonte") for r in state["recomendacoes"])
     assert state["recomendacoes"][0]["resultado"] == "positivo"
+
+
+async def test_grafo_pede_clarificacao_quando_nao_analisavel(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_run_sql(sql: str, **kw: object) -> SqlResult:
+        if "MAX(data_pedido)" in sql:
+            return SqlResult(columns=["ano", "mes"], rows=[(2026, 6)], rowcount=1, sql=sql)
+        return SqlResult(columns=[], rows=[], rowcount=0, sql=sql)
+
+    # analisavel=false -> grafo nao roda perna/enriquecer, devolve a pergunta de volta.
+    fake_llm = FakeListChatModel(responses=['{"kpis": [], "analisavel": false}'])
+    monkeypatch.setattr(g, "run_sql", fake_run_sql)
+    monkeypatch.setattr(g, "get_chat_model", lambda tier="forte": fake_llm)
+
+    state = await g.run_chat("qual a capital da Franca?")
+
+    assert state.get("precisa_clarificar") is True
+    assert "reformular" in state["relatorio"].lower()
+    assert not state.get("achados")  # nao abriu a perna quantitativa
 
 
 def test_add_meses_trata_virada_de_ano() -> None:

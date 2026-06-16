@@ -26,15 +26,17 @@ _KPIS_VALIDOS = ("faturamento", "ticket_medio", "taxa_recompra", "taxa_conversao
 _DIMENSOES = ("regiao", "produto", "canal")
 
 _PROMPT_PLANEJAR = (
-    "Voce ajuda um gestor comercial. A partir da pergunta, devolva SOMENTE um JSON "
-    '{{"kpis": [...]}} com os KPIs de interesse, escolhidos entre '
-    "faturamento, ticket_medio, taxa_recompra, taxa_conversao. Se a pergunta for vaga, "
-    'use ["faturamento"].\n\nPergunta: {pergunta}'
+    "Voce ajuda um gestor comercial. Analise a pergunta e devolva SOMENTE um JSON "
+    '{{"kpis": [...], "analisavel": true}}. "kpis": subconjunto de faturamento, ticket_medio, '
+    'taxa_recompra, taxa_conversao (use ["faturamento"] se a pergunta for vaga). '
+    '"analisavel" = false somente se a pergunta nao tiver relacao com vendas/KPIs.\n\n'
+    "Pergunta: {pergunta}"
 )
 
 _PROMPT_RELATORIO = (
     "Voce e um analista de vendas. Escreva um relatorio em portugues para o periodo-alvo "
     "{periodo} (proximo mes), respondendo a pergunta do gestor.\n"
+    "Comece com um bloco '## Premissas' listando as premissas assumidas: {premissas}\n"
     "1) Diagnostico: explique o porque das quedas usando as FONTES de diagnostico; "
     "contraste tendencia recente ({meses} meses) e sazonalidade ({anos} anos).\n"
     "2) Recomendacoes priorizadas: use SOMENTE as RECOMENDACOES fornecidas (cada uma vem de "
@@ -67,6 +69,14 @@ def _parse_kpis(texto: str) -> list[str]:
     return ["faturamento"]
 
 
+def _parse_analisavel(texto: str) -> bool:
+    try:
+        inicio, fim = texto.index("{"), texto.rindex("}") + 1
+        return bool(json.loads(texto[inicio:fim]).get("analisavel", True))
+    except (ValueError, json.JSONDecodeError):
+        return True
+
+
 def _add_meses(ano: int, mes: int, delta: int) -> tuple[int, int]:
     base = ano * 12 + (mes - 1) + delta
     return base // 12, base % 12 + 1
@@ -93,13 +103,33 @@ async def _no_planejar(state: ChatState) -> dict[str, Any]:
     else:
         ano_a, mes_a = 1970, 1
     ano_t, mes_t = _add_meses(ano_a, mes_a, 1)
-    msg = await get_chat_model("forte").ainvoke(_PROMPT_PLANEJAR.format(pergunta=state["pergunta"]))
-    return {
-        "periodo": f"{ano_t:04d}-{mes_t:02d}",
+    texto = _text(
+        await get_chat_model("forte").ainvoke(_PROMPT_PLANEJAR.format(pergunta=state["pergunta"]))
+    )
+    kpis = _parse_kpis(texto)
+    periodo = f"{ano_t:04d}-{mes_t:02d}"
+    premissas = [
+        f"Periodo-alvo assumido = proximo mes ({periodo}); voce nao especificou uma data.",
+        f"Escopo = KPIs com meta (foco: {', '.join(kpis)}).",
+    ]
+    base = {
+        "periodo": periodo,
         "mes_atual": f"{ano_a:04d}-{mes_a:02d}",
-        "kpis_foco": _parse_kpis(_text(msg)),
+        "kpis_foco": kpis,
+        "premissas": premissas,
         "sql_log": [atual_res.sql],
     }
+    if not _parse_analisavel(texto):
+        # Nem periodo nem KPI sao resolviveis a partir da pergunta -> uma pergunta de volta.
+        return {
+            **base,
+            "precisa_clarificar": True,
+            "clarificacao": (
+                "Sua pergunta nao parece ser sobre vendas. Pode reformular indicando um KPI "
+                "(faturamento, recompra, conversao ou ticket medio) ou um periodo?"
+            ),
+        }
+    return {**base, "precisa_clarificar": False}
 
 
 async def _no_perna_quantitativa(state: ChatState) -> dict[str, Any]:
@@ -231,6 +261,7 @@ async def _no_relatorio(state: ChatState) -> dict[str, Any]:
         _PROMPT_RELATORIO.format(
             pergunta=state["pergunta"],
             periodo=state.get("periodo", "?"),
+            premissas="; ".join(state.get("premissas", [])),
             meses=settings.janela_tendencia_meses,
             anos=settings.janela_sazonal_anos,
             achados=json.dumps(state.get("achados", []), ensure_ascii=False),
@@ -241,16 +272,28 @@ async def _no_relatorio(state: ChatState) -> dict[str, Any]:
     return {"relatorio": _text(msg)}
 
 
+async def _no_clarificar(state: ChatState) -> dict[str, Any]:
+    return {"relatorio": state.get("clarificacao", "")}
+
+
+def _rota_planejar(state: ChatState) -> str:
+    return "clarificar" if state.get("precisa_clarificar") else "seguir"
+
+
 def build_graph() -> Any:
     g = StateGraph(ChatState)
     g.add_node("planejar", _no_planejar)
     g.add_node("perna_quantitativa", _no_perna_quantitativa)
     g.add_node("enriquecer", _no_enriquecer)
+    g.add_node("clarificar", _no_clarificar)
     g.add_node("relatorio", _no_relatorio)
     g.add_edge(START, "planejar")
-    g.add_edge("planejar", "perna_quantitativa")
+    g.add_conditional_edges(
+        "planejar", _rota_planejar, {"seguir": "perna_quantitativa", "clarificar": "clarificar"}
+    )
     g.add_edge("perna_quantitativa", "enriquecer")
     g.add_edge("enriquecer", "relatorio")
+    g.add_edge("clarificar", END)
     g.add_edge("relatorio", END)
     return g.compile()
 
