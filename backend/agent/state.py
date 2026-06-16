@@ -18,5 +18,7 @@ class ChatState(TypedDict, total=False):
     mes_atual: str  # YYYY-MM do ultimo mes com dados
     kpis_foco: list[str]
     achados: Annotated[list[dict[str, Any]], operator.add]
+    fontes: Annotated[list[dict[str, Any]], operator.add]  # diagnostico/prescricao recuperados
+    recomendacoes: Annotated[list[dict[str, Any]], operator.add]  # cada uma amarrada a uma fonte
     sql_log: Annotated[list[str], operator.add]
     relatorio: str

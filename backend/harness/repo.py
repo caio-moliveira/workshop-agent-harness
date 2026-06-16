@@ -61,6 +61,29 @@ async def registrar_tool_call(
         )
 
 
+async def registrar_fonte(
+    run_id: str,
+    colecao: str,
+    fonte: str | None = None,
+    payload: Any | None = None,
+    score: float | None = None,
+) -> None:
+    async with _admin_engine().begin() as conn:
+        await conn.execute(
+            text(
+                "INSERT INTO harness.fontes_recuperadas (run_id, colecao, fonte, payload, score) "
+                "VALUES (:r, :c, :f, cast(:p AS jsonb), :s)"
+            ),
+            {
+                "r": run_id,
+                "c": colecao,
+                "f": fonte,
+                "p": json.dumps(payload) if payload is not None else None,
+                "s": score,
+            },
+        )
+
+
 async def finalizar_run(run_id: str, relatorio: str, status: str = "concluido") -> None:
     async with _admin_engine().begin() as conn:
         await conn.execute(

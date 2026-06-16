@@ -52,8 +52,13 @@ class SearchHit:
 def _validate(collection: str, filters: SearchFilters) -> None:
     if collection not in COLLECTIONS:
         raise SearchError(f"colecao invalida: {collection!r} (use {COLLECTIONS})")
-    if collection in _ENRIQUECIMENTO and not filters.periodo_referencia:
-        raise SearchError("periodo_referencia e obrigatorio para coleções de enriquecimento")
+    if collection in _ENRIQUECIMENTO and not any(
+        getattr(filters, campo) for campo in _FILTER_FIELDS
+    ):
+        # "Sempre filtrado": exige ao menos um filtro (dimensao, periodo ou kpi_alvo) —
+        # buscas de enriquecimento (ex.: "o que funcionou em julhos anteriores") abrangem
+        # varios periodos, entao periodo_referencia nao pode ser sempre obrigatorio.
+        raise SearchError("coleção de enriquecimento exige ao menos um filtro")
     if collection == "prescricao" and not filters.kpi_alvo:
         raise SearchError("kpi_alvo e obrigatorio na colecao prescricao")
 

@@ -1,8 +1,8 @@
-"""Endpoint POST /chat (issue #19): pergunta NL -> grafo -> relatorio, run no harness.
+"""Endpoint POST /chat (issues #19, #21): pergunta NL -> grafo -> relatorio fundamentado.
 
-Streaming, persistencia de graficos no MinIO e fontes qualitativas chegam nas
-proximas fatias (#9/#7). Aqui o run e gravado no schema `harness` e (se configurado)
-tracado no Langfuse.
+Grava o run no schema `harness` (runs + tool_calls + fontes_recuperadas) e devolve o
+relatorio com as fontes citadas e as recomendacoes (cada uma amarrada a uma fonte).
+Streaming e persistencia no MinIO chegam na #23.
 """
 
 from __future__ import annotations
@@ -29,6 +29,8 @@ class ChatResponse(BaseModel):
     periodo: str
     relatorio: str
     achados: list[dict[str, Any]]
+    fontes: list[dict[str, Any]]
+    recomendacoes: list[dict[str, Any]]
     sql_executado: list[str]
 
 
@@ -40,6 +42,10 @@ async def chat(req: ChatRequest) -> ChatResponse:
         sql_log = state.get("sql_log", [])
         for ordem, sql in enumerate(sql_log):
             await repo.registrar_tool_call(run_id, ordem, "run_sql", sql_text=sql)
+        for fonte in state.get("fontes", []):
+            await repo.registrar_fonte(
+                run_id, fonte.get("colecao", ""), fonte=fonte.get("fonte"), payload=fonte
+            )
         await repo.finalizar_run(run_id, state.get("relatorio", ""))
     except Exception:
         await repo.finalizar_run(run_id, "", status="erro")
@@ -49,5 +55,7 @@ async def chat(req: ChatRequest) -> ChatResponse:
         periodo=state.get("periodo", ""),
         relatorio=state.get("relatorio", ""),
         achados=state.get("achados", []),
+        fontes=state.get("fontes", []),
+        recomendacoes=state.get("recomendacoes", []),
         sql_executado=sql_log,
     )

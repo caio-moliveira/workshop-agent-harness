@@ -1,13 +1,11 @@
-"""Grafo LangGraph deterministico do agente (issues #19, #20).
+"""Grafo LangGraph deterministico do agente (issues #19, #20, #21).
 
-Arestas fixas `planejar -> perna_quantitativa -> relatorio`. O LLM decide so dentro
-de nos (entender a pergunta, redigir a narrativa). A leitura quantitativa usa a tool
-`run_sql` (read-only, com guardrails).
+Topologia fixa: `planejar -> perna_quantitativa -> enriquecer -> relatorio`. O LLM decide
+so dentro de nos. Leitura quantitativa via `run_sql`; enriquecimento qualitativo via
+`search` (Qdrant). O fan-out de enriquecimento e data-driven (itera os KPIs fracos).
 
-#20 — janelas temporais: `planejar` resolve o periodo-alvo = mes atual + 1 (mes atual =
-ultimo mes com dados; trata virada de ano). `perna_quantitativa` separa tendencia
-recente (ultimos N meses) de sazonalidade (mesmo mes-alvo nos K anos anteriores).
-Foco minimo: `faturamento` por regiao. Enriquecimento por KPI fraco chega na #21.
+Grounding (#21): `recomendacoes` nascem SOMENTE de hits da colecao `prescricao`, cada uma
+amarrada a uma `fonte` rastreavel. Sem fonte, nao ha recomendacao.
 """
 
 from __future__ import annotations
@@ -21,9 +19,11 @@ from langgraph.graph import END, START, StateGraph
 from agent.llm import get_chat_model
 from agent.state import ChatState
 from agent.tools.run_sql import run_sql
+from agent.tools.search import SearchError, SearchFilters, search
 from app.config import settings
 
 _KPIS_VALIDOS = ("faturamento", "ticket_medio", "taxa_recompra", "taxa_conversao")
+_DIMENSOES = ("regiao", "produto", "canal")
 
 _PROMPT_PLANEJAR = (
     "Voce ajuda um gestor comercial. A partir da pergunta, devolva SOMENTE um JSON "
@@ -33,12 +33,16 @@ _PROMPT_PLANEJAR = (
 )
 
 _PROMPT_RELATORIO = (
-    "Voce e um analista de vendas. Escreva um relatorio curto em portugues para o "
-    "periodo-alvo {periodo} (proximo mes). Para cada achado, contraste a tendencia "
-    "recente (ultimos {meses} meses) com a sazonalidade (mesmo mes nos {anos} anos "
-    "anteriores), separando queda real de variacao sazonal. Se nao houver achados, diga "
-    "que tudo esta dentro da meta. Nao invente numeros alem dos fornecidos.\n\n"
-    "Pergunta: {pergunta}\nAchados (JSON): {achados}"
+    "Voce e um analista de vendas. Escreva um relatorio em portugues para o periodo-alvo "
+    "{periodo} (proximo mes), respondendo a pergunta do gestor.\n"
+    "1) Diagnostico: explique o porque das quedas usando as FONTES de diagnostico; "
+    "contraste tendencia recente ({meses} meses) e sazonalidade ({anos} anos).\n"
+    "2) Recomendacoes priorizadas: use SOMENTE as RECOMENDACOES fornecidas (cada uma vem de "
+    "uma fonte de prescricao). Cite a fonte de cada recomendacao e contraste o que funcionou "
+    "vs o que nao funcionou (campo 'resultado'). NAO invente recomendacao sem fonte. Se a "
+    "lista de recomendacoes estiver vazia, diga que nao ha prescricao com fonte para o caso.\n\n"
+    "Pergunta: {pergunta}\nAchados: {achados}\n"
+    "Fontes de diagnostico: {fontes}\nRecomendacoes (com fonte): {recs}"
 )
 
 
@@ -74,8 +78,12 @@ def _gap_pct(realizado: float, meta: float) -> float | None:
     return None
 
 
+def _resumo(payload: dict[str, Any]) -> str:
+    doc = (payload or {}).get("document", "")
+    return doc.strip()[:220] if doc else str((payload or {}).get("subtipo", ""))
+
+
 async def _no_planejar(state: ChatState) -> dict[str, Any]:
-    # Mes atual = ultimo mes com dados; periodo-alvo = mes atual + 1 (trata virada de ano).
     atual_res = await run_sql(
         "SELECT EXTRACT(YEAR FROM MAX(data_pedido))::int AS ano, "
         "EXTRACT(MONTH FROM MAX(data_pedido))::int AS mes FROM negocio.pedidos"
@@ -95,7 +103,7 @@ async def _no_planejar(state: ChatState) -> dict[str, Any]:
 
 
 async def _no_perna_quantitativa(state: ChatState) -> dict[str, Any]:
-    periodo, mes_atual = state.get("periodo", "?"), state.get("mes_atual", "?")
+    periodo, mes_atual = str(state.get("periodo", "?")), str(state.get("mes_atual", "?"))
     if len(periodo) != 7 or len(mes_atual) != 7:
         return {"achados": [], "sql_log": []}
     ano_t, mes_t = int(periodo[:4]), int(periodo[5:7])
@@ -106,9 +114,8 @@ async def _no_perna_quantitativa(state: ChatState) -> dict[str, Any]:
     n_meses = settings.janela_tendencia_meses
     k_anos = settings.janela_sazonal_anos
     ini_ano, ini_mes = _add_meses(ano_a, mes_a, -(n_meses - 1))
-    fim_excl = _add_meses(ano_a, mes_a, 1)  # exclusivo
-    anos_sazonais = [ano_t - i for i in range(1, k_anos + 1)]
-    anos_in = ", ".join(str(a) for a in anos_sazonais)
+    fim_excl = _add_meses(ano_a, mes_a, 1)
+    anos_in = ", ".join(str(ano_t - i) for i in range(1, k_anos + 1))
 
     tendencia = await run_sql(
         "WITH real AS ("
@@ -162,7 +169,64 @@ async def _no_perna_quantitativa(state: ChatState) -> dict[str, Any]:
     return {"achados": achados, "sql_log": [tendencia.sql, sazonal.sql]}
 
 
+async def _no_enriquecer(state: ChatState) -> dict[str, Any]:
+    """Por KPI fraco: diagnostico (porque) -> prescricao (o que fazer). Data-driven."""
+    fontes: list[dict[str, Any]] = []
+    recomendacoes: list[dict[str, Any]] = []
+    for achado in state.get("achados", []):
+        kpi = achado.get("kpi", "")
+        dim = achado.get("dimensao", "")
+        campo, _, valor = dim.partition("=")
+        dim_kwargs = {campo: valor} if campo in _DIMENSOES else {}
+
+        try:
+            diag = await search(
+                "diagnostico", f"motivo da queda de {kpi} em {dim}", SearchFilters(**dim_kwargs)
+            )
+        except SearchError:
+            diag = []
+        try:
+            # prescricao e filtrada por kpi_alvo (regra/PRD); a dimensao entra na query
+            # semantica, pois o corpus de prescricao e dimensionado por canal/categoria.
+            presc = await search(
+                "prescricao", f"o que fazer para melhorar {kpi} em {dim}", SearchFilters(kpi_alvo=kpi)
+            )
+        except SearchError:
+            presc = []
+
+        for hit in diag:
+            fontes.append(
+                {
+                    "colecao": "diagnostico",
+                    "dimensao": dim,
+                    "fonte": hit.fonte,
+                    "resumo": _resumo(hit.payload),
+                }
+            )
+        for hit in presc:
+            fontes.append(
+                {
+                    "colecao": "prescricao",
+                    "dimensao": dim,
+                    "fonte": hit.fonte,
+                    "resumo": _resumo(hit.payload),
+                }
+            )
+            # Grounding: cada recomendacao carrega a fonte de onde veio.
+            recomendacoes.append(
+                {
+                    "kpi": kpi,
+                    "dimensao": dim,
+                    "acao": _resumo(hit.payload),
+                    "resultado": hit.payload.get("resultado"),
+                    "fonte": hit.fonte,
+                }
+            )
+    return {"fontes": fontes, "recomendacoes": recomendacoes}
+
+
 async def _no_relatorio(state: ChatState) -> dict[str, Any]:
+    fontes_diag = [f for f in state.get("fontes", []) if f.get("colecao") == "diagnostico"]
     msg = await get_chat_model("forte").ainvoke(
         _PROMPT_RELATORIO.format(
             pergunta=state["pergunta"],
@@ -170,6 +234,8 @@ async def _no_relatorio(state: ChatState) -> dict[str, Any]:
             meses=settings.janela_tendencia_meses,
             anos=settings.janela_sazonal_anos,
             achados=json.dumps(state.get("achados", []), ensure_ascii=False),
+            fontes=json.dumps(fontes_diag, ensure_ascii=False),
+            recs=json.dumps(state.get("recomendacoes", []), ensure_ascii=False),
         )
     )
     return {"relatorio": _text(msg)}
@@ -179,10 +245,12 @@ def build_graph() -> Any:
     g = StateGraph(ChatState)
     g.add_node("planejar", _no_planejar)
     g.add_node("perna_quantitativa", _no_perna_quantitativa)
+    g.add_node("enriquecer", _no_enriquecer)
     g.add_node("relatorio", _no_relatorio)
     g.add_edge(START, "planejar")
     g.add_edge("planejar", "perna_quantitativa")
-    g.add_edge("perna_quantitativa", "relatorio")
+    g.add_edge("perna_quantitativa", "enriquecer")
+    g.add_edge("enriquecer", "relatorio")
     g.add_edge("relatorio", END)
     return g.compile()
 

@@ -29,9 +29,13 @@ def test_rejeita_colecao_invalida() -> None:
         _validate("inexistente", SearchFilters(periodo_referencia="2024-06"))
 
 
-def test_exige_periodo_em_enriquecimento() -> None:
+def test_exige_algum_filtro_em_enriquecimento() -> None:
     with pytest.raises(SearchError):
-        _validate("diagnostico", SearchFilters())
+        _validate("diagnostico", SearchFilters())  # nenhum filtro -> recusa
+
+
+def test_enriquecimento_aceita_so_dimensao() -> None:
+    _validate("diagnostico", SearchFilters(regiao="Sul"))  # dimensao basta (sem periodo)
 
 
 def test_exige_kpi_alvo_em_prescricao() -> None:
