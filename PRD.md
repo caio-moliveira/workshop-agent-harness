@@ -78,11 +78,11 @@ inspeciona as fontes citadas e faz perguntas de acompanhamento.
 ## Implementation Decisions
 
 **Arquitetura e fases**
-- **Duas fases com fronteira rígida** (ADR 0002): ingestão (offline, determinística, sem agente/LLM raciocinando) e runtime (serving, onde o agente vive). O embedding na ingestão é vetorização, não "o agente".
-- **Stack:** Backend **FastAPI** (Python 3.13, uv) + **LangChain/LangGraph** — o agente é um grafo determinístico LangGraph (ADR 0001) sobre o ecossistema LangChain, não um ReAct livre. Frontend **React + Vite**. Stores: **Postgres** (negócio + harness), **Qdrant** (3 coleções), **MinIO** (corpus bruto). **nginx** como reverse proxy protegendo a aplicação (única porta exposta ao host). **Docker Compose** sobe tudo; **Langfuse** para observabilidade. Embeddings da ingestão: **OpenAI `text-embedding-3-large` (3072d)**, arquitetura provider-agnostic (trocável).
+- **Duas fases com fronteira rígida**: ingestão (offline, determinística, sem agente/LLM raciocinando) e runtime (serving, onde o agente vive). O embedding na ingestão é vetorização, não "o agente".
+- **Stack:** Backend **FastAPI** (Python 3.13, uv) + **LangChain/LangGraph** — o agente é um grafo determinístico LangGraph sobre o ecossistema LangChain, não um ReAct livre. Frontend **React + Vite**. Stores: **Postgres** (negócio + harness), **Qdrant** (3 coleções), **MinIO** (corpus bruto). **nginx** como reverse proxy protegendo a aplicação (única porta exposta ao host). **Docker Compose** sobe tudo; **Langfuse** para observabilidade. Embeddings da ingestão: **OpenAI `text-embedding-3-large` (3072d)**, arquitetura provider-agnostic (trocável).
 
 **O agente (runtime)**
-- **Grafo LangGraph determinístico** (ADR 0001): arestas fixas `planejar → perna_quantitativa → (por KPI fraco: diagnostico → prescricao) → sintese → relatorio`. O fan-out é data-driven (nº de KPIs fracos); o LLM decide só dentro de nós (traduzir pergunta→KPIs, gerar SQL, escolher dimensão, redigir narrativa). Sem ReAct livre. Reaproveita as tools individuais do `SQLDatabaseToolkit` dentro do grafo próprio.
+- **Grafo LangGraph determinístico**: arestas fixas `planejar → perna_quantitativa → (por KPI fraco: diagnostico → prescricao) → sintese → relatorio`. O fan-out é data-driven (nº de KPIs fracos); o LLM decide só dentro de nós (traduzir pergunta→KPIs, gerar SQL, escolher dimensão, redigir narrativa). Sem ReAct livre. Reaproveita as tools individuais do `SQLDatabaseToolkit` dentro do grafo próprio.
 - **Chat multi-turno:** porta de entrada conversacional = **reescrita contextual da pergunta** ("condense question") → **roteador de intenção** (caso central vs. casos secundários vs. clarificação) → sub-grafo. O **sub-grafo analítico é stateless**; o estado de sessão (sessões, runs, turnos) vive no schema de harness.
 - **Ambiguidade:** best-effort com **premissas declaradas** no topo do relatório (default: período = mês atual + 1; escopo = todos os KPIs com meta). Faz **uma** pergunta de volta só quando nem período nem KPI são resolvíveis.
 - **Duas tools, naturezas distintas:** `run_sql` (Postgres, somente leitura, com guardrails) e `search(collection, query, filters)` — **tool única parametrizada pela coleção** (`camada_semantica` | `diagnostico` | `prescricao`), com a coleção escolhida pelo nó do grafo, não por um laço do LLM.
@@ -94,10 +94,10 @@ inspeciona as fontes citadas e faz perguntas de acompanhamento.
 - **Qdrant, três coleções por intenção e ciclo de vida** (indexadas por `seed/ingest.py`): `camada_semantica` (definições de KPI + exemplos pergunta→SQL; consultada antes da query), `diagnostico` (explica o porquê; após o SQL, por KPI fraco), `prescricao` (o que fazer; filtrada por `kpi_alvo`; guarda também o histórico de relatórios anteriores).
 - **Payload das coleções de enriquecimento (§8.3):** `tipo`, `subtipo`, `periodo_referencia` (`YYYY-MM`), `ano`, `mes`, `data_ingestao`, `regiao`, `produto`, `canal`, `fonte`; `prescricao` adiciona `kpi_alvo` e `resultado`. **`periodo_referencia` ≠ `data_ingestao`** e o filtro de enriquecimento nunca usa a data de upload.
 
-**Dataset e EDD**
-- **Dataset de e-commerce de varejo genérico**, multicanal, multi-região, clientes recorrentes, 2+ anos de histórico com sazonalidade.
-- **5–8 narrativas plantadas** (ADR 0003), cada uma um triplo rastreável (padrão quantitativo no Postgres ↔ documentos de diagnóstico ↔ prescrição com `resultado`, incluindo ≥1 par funcionou/não-funcionou). **O golden dataset nasce das narrativas**; o resto é ruído realista com KPIs saudáveis que não disparam enriquecimento.
-- **EDD fora do código do backend**, golden dataset versionado (YAML/JSON), runner pytest como gate de aceite.
+**Dados e avaliação (EDD)**
+- **Dados reais, já persistidos:** ~5 anos de vendas/metas de um e-commerce de varejo (multicanal, multi-região, clientes recorrentes, com sazonalidade) no Postgres; corpus qualitativo no Qdrant. O app **consome** esses dados — não os produz.
+- **Situações rastreáveis:** nos dados, um padrão quantitativo (ex.: recompra caindo numa região) liga-se a documentos de `diagnostico` (o porquê) e de `prescricao` com `resultado` (o que já se tentou — incluindo casos que funcionaram e que não funcionaram); é o que o agente contrasta.
+- **Avaliação (EDD):** golden dataset de `(pergunta → SQL esperado → fontes esperadas → recomendação esperada)` derivado dessas situações, versionado fora do backend (YAML/JSON); runner pytest como gate de aceite (execution accuracy + faithfulness + answer relevancy).
 
 **API e fluxo (contratos de alto nível)**
 - Endpoint de chat recebe pergunta NL + contexto de sessão e devolve relatório (texto + gráficos) com fontes citadas; relatório e gráficos persistidos no MinIO.
@@ -126,4 +126,3 @@ inspeciona as fontes citadas e faz perguntas de acompanhamento.
 - Escrita nos dados de negócio — toda interação com o Postgres de vendas é somente leitura.
 - Forecasting estatístico formal — usa tendência e sazonalidade observadas, não modelos preditivos.
 - BI self-service genérico para qualquer pergunta ad-hoc sobre qualquer tabela.
-- MCP de infra para o agente construtor, loop autônomo (Ralph), e os subagentes de review/testes — adiados no harness.
