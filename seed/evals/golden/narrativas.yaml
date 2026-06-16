@@ -1,0 +1,172 @@
+# =============================================================================
+# Golden dataset — Bússola (EDD)
+# =============================================================================
+# Derivado das narrativas plantadas (seed/NARRATIVAS.md). Cada narrativa gera ≥1
+# item. Fica FORA do código do backend (regra evals.md), versionado.
+#
+# Campos por item (contrato evals.md / PRD §13):
+#   pergunta              — entrada em linguagem natural.
+#   sql_esperado          — SQL canônico cujo RESULTSET é a referência da métrica
+#                           de *execution accuracy* (compara-se o resultado, não o texto).
+#   fontes_esperadas      — URIs (MinIO) que a recomendação DEVE citar (grounding,
+#                           RNF-02). Vazio = KPI saudável: o agente NÃO deve enriquecer.
+#   recomendacao_esperada — o desfecho que faithfulness/answer-relevancy avaliam.
+#
+# Campos auxiliares (não-contratuais, ajudam o runner e a leitura):
+#   id, narrativa, intencao (central|secundario|controle), dispara_enriquecimento,
+#   distratores (fontes plausíveis que NÃO devem ser citadas — precisão de recuperação).
+#
+# Os sql_esperado abaixo foram executados contra o banco semeado (negocio.*).
+# =============================================================================
+
+- id: n1-recompra-sul
+  narrativa: N1
+  intencao: central
+  dispara_enriquecimento: true
+  pergunta: "Como melhorar a recompra na região Sul no próximo mês?"
+  sql_esperado: |
+    WITH ped AS (
+      SELECT p.id, p.data_pedido,
+             (EXISTS (SELECT 1 FROM negocio.pedidos a
+                      WHERE a.cliente_id = p.cliente_id
+                        AND a.data_pedido < p.data_pedido))::int AS recompra
+      FROM negocio.pedidos p
+      JOIN negocio.regioes r ON r.id = p.regiao_id
+      WHERE r.nome = 'Sul'
+    )
+    SELECT date_trunc('month', data_pedido)::date AS mes,
+           round(avg(recompra), 3) AS taxa_recompra
+    FROM ped
+    WHERE data_pedido >= date '2026-01-01'
+    GROUP BY 1 ORDER BY 1;
+  fontes_esperadas:
+    - minio://corpus/diagnostico/2025-11-sul-atrasos-transportadora.md
+    - minio://corpus/prescricao/2024-08-sul-frete-gratis.md
+    - minio://corpus/prescricao/2023-08-sul-frete-gratis.md
+    - minio://corpus/prescricao/2025-03-sul-brinde-generico.md
+  distratores:
+    - minio://corpus/diagnostico/2025-09-sudeste-nps-positivo.md
+    - minio://corpus/diagnostico/2025-08-app-home-layout.md
+  recomendacao_esperada: >
+    A recompra no Sul está abaixo da meta no 1º semestre de 2026. Causa provável:
+    atrasos de entrega após a troca de transportadora (out/2025). Reativar o frete
+    grátis na região (funcionou em 2024, resultado positivo) e resolver o gargalo
+    logístico; evitar o brinde genérico (resultado nulo em 2025).
+
+- id: n2-eletronicos-marketplace
+  narrativa: N2
+  intencao: secundario
+  dispara_enriquecimento: true
+  pergunta: "Por que o faturamento de Eletrônicos no marketplace caiu no fim de 2025 e o que fazer?"
+  sql_esperado: |
+    SELECT extract(year FROM p.data_pedido)::int AS ano,
+           extract(month FROM p.data_pedido)::int AS mes,
+           round(sum(i.quantidade * i.preco_unitario), 2) AS receita
+    FROM negocio.itens_pedido i
+    JOIN negocio.pedidos p    ON p.id = i.pedido_id AND p.status = 'pago'
+    JOIN negocio.produtos pr  ON pr.id = i.produto_id
+    JOIN negocio.categorias c ON c.id = pr.categoria_id
+    JOIN negocio.canais ca    ON ca.id = p.canal_id
+    WHERE c.nome = 'Eletrônicos' AND ca.nome = 'marketplace'
+      AND extract(month FROM p.data_pedido) IN (10, 11, 12)
+      AND extract(year FROM p.data_pedido) IN (2024, 2025)
+    GROUP BY 1, 2 ORDER BY 1, 2;
+  fontes_esperadas:
+    - minio://corpus/diagnostico/2025-10-eletronicos-marketplace-comissao.md
+    - minio://corpus/prescricao/2025-11-eletronicos-bundle-kit.md
+    - minio://corpus/prescricao/2024-11-eletronicos-cupom-agressivo.md
+  distratores:
+    - minio://corpus/prescricao/2024-10-moda-sudeste-vitrine-digital.md
+  recomendacao_esperada: >
+    Faturamento de Eletrônicos no marketplace caiu ~45% no 4º tri/2025 vs. 2024,
+    por aumento de comissão do marketplace e guerra de preço. Priorizar kits/bundles
+    de acessórios (funcionou em 2025, protege margem) e renegociar comissão; NÃO
+    repetir o cupom agressivo (resultado negativo em 2024, margem insustentável).
+
+- id: n3-conversao-site
+  narrativa: N3
+  intencao: secundario
+  dispara_enriquecimento: true
+  pergunta: "Como aumentar a conversão do site próprio em julho?"
+  sql_esperado: |
+    SELECT to_char(d, 'YYYY-MM') AS mes,
+           round(ped::numeric / nullif(sess, 0), 4) AS conversao
+    FROM (SELECT date_trunc('month', p.data_pedido) d, count(*) ped
+          FROM negocio.pedidos p JOIN negocio.canais c ON c.id = p.canal_id
+          WHERE c.nome = 'site_proprio' GROUP BY 1) a
+    JOIN (SELECT date_trunc('month', s.data) d, sum(s.sessoes) sess
+          FROM negocio.sessoes_diarias s JOIN negocio.canais c ON c.id = s.canal_id
+          WHERE c.nome = 'site_proprio' GROUP BY 1) b USING (d)
+    WHERE d >= date '2025-07-01' ORDER BY d;
+  fontes_esperadas:
+    - minio://corpus/diagnostico/2025-07-site-checkout-mobile-friccao.md
+    - minio://corpus/diagnostico/2024-07-site-conversao-inverno.md
+    - minio://corpus/prescricao/2026-02-site-redesign-checkout.md
+    - minio://corpus/prescricao/2023-09-site-popup-desconto.md
+  recomendacao_esperada: >
+    A conversão do site próprio tem vale sazonal no inverno (jun–ago), recorrente em
+    2024 e 2025, e julho é historicamente fraco. O redesign de checkout (fev/2026)
+    elevou a conversão ~28%, mas não elimina o vale sazonal. Consolidar o checkout em
+    página única e reforçar a experiência mobile/promoção na janela de inverno; evitar
+    o pop-up de desconto (resultado nulo em 2023).
+
+- id: n4-beleza-nordeste
+  narrativa: N4
+  intencao: controle
+  dispara_enriquecimento: false
+  pergunta: "Devo investir mais em Beleza no Nordeste no próximo mês?"
+  sql_esperado: |
+    SELECT extract(year FROM p.data_pedido)::int AS ano,
+           round(sum(i.quantidade * i.preco_unitario), 2) AS receita
+    FROM negocio.itens_pedido i
+    JOIN negocio.pedidos p    ON p.id = i.pedido_id AND p.status = 'pago'
+    JOIN negocio.produtos pr  ON pr.id = i.produto_id
+    JOIN negocio.categorias c ON c.id = pr.categoria_id
+    JOIN negocio.regioes r    ON r.id = p.regiao_id
+    WHERE c.nome = 'Beleza' AND r.nome = 'Nordeste'
+    GROUP BY 1 ORDER BY 1;
+  fontes_esperadas: []
+  recomendacao_esperada: >
+    Beleza no Nordeste é um KPI SAUDÁVEL (acima da meta, crescimento consistente
+    desde 2025). Não há problema a diagnosticar nem prescrição corretiva: o agente
+    deve reconhecê-lo como oportunidade e NÃO disparar enriquecimento (testa o
+    roteamento do passo 4).
+
+- id: n5-loja-fisica
+  narrativa: N5
+  intencao: secundario
+  dispara_enriquecimento: true
+  pergunta: "O que fazer com a queda do faturamento da loja física?"
+  sql_esperado: |
+    SELECT extract(year FROM p.data_pedido)::int AS ano,
+           round(sum(p.valor_total), 2) AS faturamento
+    FROM negocio.pedidos p
+    JOIN negocio.canais c ON c.id = p.canal_id
+    WHERE c.nome = 'loja_fisica' AND p.status = 'pago'
+    GROUP BY 1 ORDER BY 1;
+  fontes_esperadas:
+    - minio://corpus/diagnostico/2025-05-loja-fisica-queda-fluxo.md
+    - minio://corpus/prescricao/2025-04-loja-omnichannel-retira.md
+    - minio://corpus/prescricao/2024-09-loja-reforma-vitrine.md
+  recomendacao_esperada: >
+    A loja física está em declínio ESTRUTURAL (migração do consumo para o online),
+    não conjuntural. Expandir o omnichannel "compre online, retire na loja"
+    (funcionou em 2025, recupera fluxo) e tratar a loja como elo da jornada digital;
+    evitar ações isoladas de ponto de venda como reforma de vitrine (resultado nulo).
+
+- id: n6-ticket-sazonal
+  narrativa: N6
+  intencao: controle
+  dispara_enriquecimento: false
+  pergunta: "O ticket médio sobe muito no fim do ano — isso é um problema?"
+  sql_esperado: |
+    SELECT to_char(date_trunc('month', data_pedido), 'YYYY-MM') AS mes,
+           round(sum(valor_total) / count(*), 2) AS ticket_medio
+    FROM negocio.pedidos
+    WHERE status = 'pago' AND data_pedido >= date '2025-01-01'
+    GROUP BY 1 ORDER BY 1;
+  fontes_esperadas: []
+  recomendacao_esperada: >
+    A alta de ticket médio em novembro/dezembro é SAZONAL e esperada (Black Friday /
+    Natal), não uma anomalia. O agente deve reconhecê-la como padrão saudável e NÃO
+    disparar diagnóstico/prescrição (controle sazonal de roteamento).

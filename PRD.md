@@ -1,10 +1,4 @@
-# PRD — Bússola (Agente Analítico de Vendas)
-
-> PRD consolidado, sintetizado da sessão de definição. Fontes: `ideia.md` (rascunho de origem),
-> `DECISOES.md` (decisões D1–D11), `docs/adr/0001–0003` e o harness em `.claude/`.
-> **Status:** pronto para fatiar em features (SDD) e issues. **Data:** 15 de junho de 2026.
-
----
+# PRD — Agente Analítico de Vendas
 
 ## Problem Statement
 
@@ -17,6 +11,10 @@ em linguagem natural, perguntar "como melhorar minhas vendas no próximo mês?" 
 fundamentado — não outro gráfico para interpretar sozinho.
 
 ## Solution
+
+> **Os dados já estão postos:** ~5 anos de vendas/metas no Postgres (schema `negocio`) e o corpus
+> qualitativo (tickets, NPS, atas, post-mortems) em markdown, subido ao MinIO e indexado no Qdrant.
+> O escopo deste PRD é a **aplicação que consome esses dados**, não a produção deles.
 
 Um assistente **agêntico, em formato de chat**, que costura duas naturezas de dado para produzir
 **relatórios de melhoria acionáveis** para o próximo período:
@@ -81,7 +79,7 @@ inspeciona as fontes citadas e faz perguntas de acompanhamento.
 
 **Arquitetura e fases**
 - **Duas fases com fronteira rígida** (ADR 0002): ingestão (offline, determinística, sem agente/LLM raciocinando) e runtime (serving, onde o agente vive). O embedding na ingestão é vetorização, não "o agente".
-- **Stack:** FastAPI (Python 3.13, uv) · LangGraph · Postgres · Qdrant · MinIO · React · nginx · Docker Compose · Langfuse. Frontend entra após o backend estabilizar.
+- **Stack:** Backend **FastAPI** (Python 3.13, uv) + **LangChain/LangGraph** — o agente é um grafo determinístico LangGraph (ADR 0001) sobre o ecossistema LangChain, não um ReAct livre. Frontend **React + Vite**. Stores: **Postgres** (negócio + harness), **Qdrant** (3 coleções), **MinIO** (corpus bruto). **nginx** como reverse proxy protegendo a aplicação (única porta exposta ao host). **Docker Compose** sobe tudo; **Langfuse** para observabilidade. Embeddings da ingestão: **OpenAI `text-embedding-3-large` (3072d)**, arquitetura provider-agnostic (trocável).
 
 **O agente (runtime)**
 - **Grafo LangGraph determinístico** (ADR 0001): arestas fixas `planejar → perna_quantitativa → (por KPI fraco: diagnostico → prescricao) → sintese → relatorio`. O fan-out é data-driven (nº de KPIs fracos); o LLM decide só dentro de nós (traduzir pergunta→KPIs, gerar SQL, escolher dimensão, redigir narrativa). Sem ReAct livre. Reaproveita as tools individuais do `SQLDatabaseToolkit` dentro do grafo próprio.
@@ -91,9 +89,9 @@ inspeciona as fontes citadas e faz perguntas de acompanhamento.
 - **Janelas temporais:** tendência = últimos **6 meses**; sazonal = mesmo mês-alvo nos **2 anos anteriores**. Parametrizável; defaults cravados.
 - **LLM:** default Claude — tier forte (planejamento/síntese), tier rápido (SQL/roteamento), embedding dedicado na ingestão. Arquitetura provider-agnostic (LangChain), modelo trocável.
 
-**Modelo de dados**
-- **Postgres, dois mundos logicamente separados:** schema de **negócio** (vendas: pedidos, itens, clientes, produtos, regiões, canais; + **metas/OKRs** por período e dimensão que definem "baixo"/"com margem") — somente leitura para o agente; schema de **harness** (sessões, runs, chamadas de tool, traces, golden datasets) — leitura/escrita.
-- **Qdrant, três coleções por intenção e ciclo de vida:** `camada_semantica` (gera SQL correto; consultada antes da query), `diagnostico` (explica o porquê; após o SQL, para KPIs fracos), `prescricao` (o que fazer; filtrada por `kpi_alvo`). Histórico de relatórios anteriores vive em `prescricao`.
+**Modelo de dados (já existente — DDL em `seed/schema.sql`, ingestão em `seed/ingest.py`)**
+- **Postgres, dois mundos separados.** Schema de **negócio** (somente leitura para o agente), já populado com ~5 anos: dimensões `regioes`, `canais`, `categorias`, `produtos`, `clientes`; fatos `pedidos`, `itens_pedido` e `sessoes_diarias` (tráfego — denominador da conversão); e `metas` (OKRs por `ano`/`mes`/`kpi`/dimensão, que definem "abaixo da meta"). Schema de **harness** (sessões, runs, chamadas de tool, traces, golden datasets) — leitura/escrita.
+- **Qdrant, três coleções por intenção e ciclo de vida** (indexadas por `seed/ingest.py`): `camada_semantica` (definições de KPI + exemplos pergunta→SQL; consultada antes da query), `diagnostico` (explica o porquê; após o SQL, por KPI fraco), `prescricao` (o que fazer; filtrada por `kpi_alvo`; guarda também o histórico de relatórios anteriores).
 - **Payload das coleções de enriquecimento (§8.3):** `tipo`, `subtipo`, `periodo_referencia` (`YYYY-MM`), `ano`, `mes`, `data_ingestao`, `regiao`, `produto`, `canal`, `fonte`; `prescricao` adiciona `kpi_alvo` e `resultado`. **`periodo_referencia` ≠ `data_ingestao`** e o filtro de enriquecimento nunca usa a data de upload.
 
 **Dataset e EDD**
@@ -122,19 +120,10 @@ inspeciona as fontes citadas e faz perguntas de acompanhamento.
 
 ## Out of Scope
 
-- **Frontend** completo na primeira fatia (entra após o backend estabilizar); por ora, foco backend + agente + ingestão + evals.
-- Ingestão automática/contínua a partir de ERP/CRM — a carga é por seed/upload manual.
+- Ingestão automática/contínua a partir de ERP/CRM — o corpus é mantido por upload manual.
 - Multi-tenant / múltiplas empresas.
 - Ações com efeito colateral (disparar campanha, alterar preço) — o agente só recomenda.
 - Escrita nos dados de negócio — toda interação com o Postgres de vendas é somente leitura.
 - Forecasting estatístico formal — usa tendência e sazonalidade observadas, não modelos preditivos.
 - BI self-service genérico para qualquer pergunta ad-hoc sobre qualquer tabela.
 - MCP de infra para o agente construtor, loop autônomo (Ralph), e os subagentes de review/testes — adiados no harness.
-
-## Further Notes
-
-- O projeto é um **workshop conduzido como projeto de mundo real**: aceite duplo — a arquitetura/evals demonstram o padrão de forma exemplar **e** o resultado é convincente como produto real.
-- O log completo de decisões (D1–D11) está em `DECISOES.md`; os porquês contestáveis em `docs/adr/`.
-- O harness de construção (`.claude/`) já existe: `CLAUDE.md`, `rules/` (backend, agente, ingestao, evals), `commands/` (`/feature`, `/run-evals`, `/seed-data`), subagente `eval-runner`, e `settings.json` com hook de gate (`scripts/gate.py`) + permissões.
-- **Próximos passos sugeridos:** bootstrap do esqueleto + deps; derivar specs (SDD/BDD) por feature; projetar as narrativas plantadas e o golden dataset inicial via `/seed-data`.
-- **Publicação:** ainda não há issue tracker nem remote git. Para fatiar este PRD em issues `ready-for-agent`, rode `/setup-matt-pocock-skills` (escolha tracker local ou GitHub) e depois `/to-issues`.

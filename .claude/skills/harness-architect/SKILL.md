@@ -40,6 +40,9 @@ Estes princípios não são decoração — eles determinam *o que* perguntar e 
   skill — não um "run ruim" para repetir.
 - **Comece mínimo (Ralph).** Não complique cedo demais. Recomende o menor harness que cobre os
   riscos reais do PRD; subagentes e orquestração só quando a tarefa pede.
+- **Baseline da empresa, simples por padrão.** O time simula boas práticas reais — ADRs para os
+  porquês, EDD como gate de aceite, rules curtas por área, gate hard no hook. Gere esse baseline,
+  mas **sem inflar**: o mínimo que cobre os riscos do PRD, nunca um harness "enterprise" por reflexo.
 - **O harness se move, não encolhe.** Não dimensione o harness ao modelo atual; dimensione aos
   riscos do projeto.
 
@@ -47,11 +50,16 @@ Estes princípios não são decoração — eles determinam *o que* perguntar e 
 
 Antes de qualquer pergunta, localize e leia o material de origem:
 
-1. Procure por um PRD, SPEC, ou documento de arquitetura (em anexos, no diretório do projeto, ou
-   na conversa). Se não houver nenhum, pergunte ao usuário onde ele está ou peça um resumo curto
-   do projeto antes de prosseguir.
-2. Leia também qualquer `.claude/` já existente — a skill pode estar *complementando* um harness,
-   não criando do zero.
+1. **Ache o PRD canônico.** Prefira `PRD.md` (consolidado). Se houver vários docs tipo-PRD (ex.:
+   `ideia.md` rascunho + `PRD.md` consolidado), trate o consolidado como verdade, os demais como
+   histórico, e confirme com o usuário qual é o canônico. Sem nenhum PRD, peça onde está ou um
+   resumo curto antes de prosseguir.
+2. **Leia o `.claude/` já existente** — a skill quase sempre *complementa* um harness, não cria do
+   zero.
+3. **Detecte deriva antes de gerar.** Compare o que o PRD/CLAUDE.md dizem do harness com o que está
+   no disco (rules, commands, agents, hooks). Liste divergências — arquivo que o doc cita mas sumiu,
+   hook apontando pra script inexistente — e **sinalize ao usuário**; não scaffold por cima de um
+   conflito.
 
 ## Workflow
 
@@ -61,6 +69,11 @@ Leia o PRD por inteiro. Para cada um dos sete clusters de entrevista
 (ver `references/interview-bank.md`), escreva o que você **já consegue inferir** do documento.
 Exemplos do que costuma estar no PRD: a stack, os comandos, invariantes ("SQL somente leitura"),
 a separação de fases, os KPIs/critérios de sucesso, a estratégia de avaliação.
+
+**Leia também por camada da stack.** Identifique quais camadas o PRD prevê — backend, frontend,
+db, IA/agente, ingestão, evals — e, para cada camada *presente*, derive as `rules/` e os `agents/`
+que ela costuma exigir. O mapa camada → artefato está em `references/stack-layer-map.md` (leia antes
+de planejar). Só gere artefato para camada que o PRD realmente tem — camada ausente não vira arquivo.
 
 ### 2. Apresente as inferências e pergunte só as lacunas
 

@@ -8,3 +8,6 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
+# Dataset sintético regenerável (seed/generate.py é a fonte da verdade)
+seed/data/
