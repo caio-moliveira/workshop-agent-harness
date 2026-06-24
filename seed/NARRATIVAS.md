@@ -1,4 +1,4 @@
-# Narrativas plantadas — dataset sintético (Bússola)
+# Narrativas plantadas — dataset sintético
 
 > Companion de `seed/generate.py`. Documenta o **enredo** de cada narrativa para
 > revisão humana (passo 5 da skill `seed-data`).

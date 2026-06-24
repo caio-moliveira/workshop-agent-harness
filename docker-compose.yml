@@ -1,4 +1,4 @@
-# Bússola — esqueleto andante (issue #1).
+# Agente Analítico de Vendas — esqueleto andante (issue #1).
 # Cadeia: nginx (único exposto) -> api (FastAPI) -> postgres (vazio).
 # RNF-05: sobe via `docker compose up -d`. Antes: `cp .env.example .env` e ajuste os segredos.
 # Stores: postgres (schema negocio via seed/), qdrant (3 coleções) e minio (corpus bruto).

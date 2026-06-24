@@ -1,4 +1,4 @@
-"""seed/generate.py — gerador determinístico do dataset sintético da Bússola.
+"""seed/generate.py — gerador determinístico do dataset sintético.
 
 E-commerce de varejo, ~5 anos de histórico, com SAZONALIDADE + TENDÊNCIA e as
 NARRATIVAS PLANTADAS (lado quantitativo) descritas em `seed/NARRATIVAS.md`.

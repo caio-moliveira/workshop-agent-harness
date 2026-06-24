@@ -1,7 +1,7 @@
 [project]
 name = "workshop-agent-harness"
 version = "0.1.0"
-description = "Bússola — agente analítico de vendas (text-to-SQL + recuperação qualitativa)"
+description = "Agente analítico de vendas (text-to-SQL + recuperação qualitativa)"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [

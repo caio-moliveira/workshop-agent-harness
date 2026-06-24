@@ -1,5 +1,5 @@
 -- =============================================================================
--- Bússola · Schema de NEGÓCIO (e-commerce de varejo) — seed/POC
+-- Agente Analítico de Vendas · Schema de NEGÓCIO (e-commerce de varejo) — seed/POC
 -- =============================================================================
 -- Invariantes do projeto (CLAUDE.md):
 --   #2/#3 — este schema é SOMENTE LEITURA para o agente em runtime. Só o schema

@@ -1,5 +1,5 @@
 # =============================================================================
-# Golden dataset — Bússola (EDD)
+# Golden dataset (EDD)
 # =============================================================================
 # Derivado das narrativas plantadas (seed/NARRATIVAS.md). Cada narrativa gera ≥1
 # item. Fica FORA do código do backend (regra evals.md), versionado.
