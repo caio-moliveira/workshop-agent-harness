@@ -1,0 +1,97 @@
+id,categoria_id,sku,nome,preco_base,ativo
+1,1,ELE-00001,Smartphone Pro,3367.99,true
+2,1,ELE-00002,Smartphone Essential,1192.63,true
+3,1,ELE-00003,Fone Bluetooth Max,3083.94,true
+4,1,ELE-00004,Fone Bluetooth Pro,4027.75,true
+5,1,ELE-00005,Smart TV Pro,259.21,true
+6,1,ELE-00006,Smart TV Prime,530.39,true
+7,1,ELE-00007,Notebook Lite,2756.84,true
+8,1,ELE-00008,Notebook Air,2578.25,true
+9,1,ELE-00009,Caixa de Som Air,1085.53,true
+10,1,ELE-00010,Caixa de Som Prime,2700.98,true
+11,1,ELE-00011,Smartwatch Essential,3177.85,true
+12,1,ELE-00012,Smartwatch Max,1610.3,true
+13,1,ELE-00013,Tablet Max,4312.59,true
+14,1,ELE-00014,Tablet Lite,1594.28,true
+15,1,ELE-00015,Carregador Turbo Pro,543.62,true
+16,1,ELE-00016,Carregador Turbo Prime,3832.03,true
+17,2,MOD-00017,Camiseta Ultra,330.57,true
+18,2,MOD-00018,Camiseta Plus,302.7,true
+19,2,MOD-00019,Tênis Air,390.32,true
+20,2,MOD-00020,Tênis Pro,176.27,true
+21,2,MOD-00021,Calça Jeans Air,338.59,true
+22,2,MOD-00022,Calça Jeans Plus,262.67,true
+23,2,MOD-00023,Jaqueta Eco,293.65,true
+24,2,MOD-00024,Jaqueta Lite,56.5,true
+25,2,MOD-00025,Vestido Lite,394.68,true
+26,2,MOD-00026,Vestido Plus,347.91,true
+27,2,MOD-00027,Mochila Pro,140.07,true
+28,2,MOD-00028,Mochila Prime,268.85,true
+29,2,MOD-00029,Boné Eco,173.27,true
+30,2,MOD-00030,Boné Max,115.42,true
+31,3,CAS-00031,Jogo de Panelas Plus,559.94,true
+32,3,CAS-00032,Jogo de Panelas Pro,178.89,true
+33,3,CAS-00033,Luminária Lite,432.17,true
+34,3,CAS-00034,Luminária Max,264.85,true
+35,3,CAS-00035,Tapete Air,625.61,true
+36,3,CAS-00036,Tapete Lite,763.28,true
+37,3,CAS-00037,Edredom Essential,744.97,true
+38,3,CAS-00038,Edredom Lite,730.39,true
+39,3,CAS-00039,Cafeteira Prime,87.58,true
+40,3,CAS-00040,Cafeteira Plus,824.43,true
+41,3,CAS-00041,Conjunto de Toalhas Ultra,214.99,true
+42,3,CAS-00042,Conjunto de Toalhas Eco,464.33,true
+43,4,BEL-00043,Perfume Studio,80.92,true
+44,4,BEL-00044,Perfume Max,76.72,true
+45,4,BEL-00045,Kit Skincare Air,80.43,true
+46,4,BEL-00046,Kit Skincare Ultra,154.45,true
+47,4,BEL-00047,Secador Ultra,103.26,true
+48,4,BEL-00048,Secador Prime,249.38,true
+49,4,BEL-00049,Batom Max,133.51,true
+50,4,BEL-00050,Batom Air,193.83,true
+51,4,BEL-00051,Shampoo Premium Pro,164.31,true
+52,4,BEL-00052,Shampoo Premium Max,202.18,true
+53,4,BEL-00053,Máscara Facial Prime,108.5,true
+54,4,BEL-00054,Máscara Facial Pro,157.05,true
+55,5,ESP-00055,Bicicleta Studio,331.64,true
+56,5,ESP-00056,Bicicleta Air,681.74,true
+57,5,ESP-00057,Halteres Essential,830.78,true
+58,5,ESP-00058,Halteres Pro,662.89,true
+59,5,ESP-00059,Tênis de Corrida Plus,169.4,true
+60,5,ESP-00060,Tênis de Corrida Eco,544.33,true
+61,5,ESP-00061,Barraca Studio,1146.43,true
+62,5,ESP-00062,Barraca Essential,1055.99,true
+63,5,ESP-00063,Bola Plus,923.88,true
+64,5,ESP-00064,Bola Air,628.91,true
+65,5,ESP-00065,Esteira Dobrável Pro,1016.34,true
+66,5,ESP-00066,Esteira Dobrável Plus,628.89,true
+67,6,ALI-00067,Café Especial Lite,76.7,true
+68,6,ALI-00068,Café Especial Max,41.66,true
+69,6,ALI-00069,Kit Vinhos Air,113.83,true
+70,6,ALI-00070,Kit Vinhos Essential,95.62,true
+71,6,ALI-00071,Chocolate Belga Pro,159.99,true
+72,6,ALI-00072,Chocolate Belga Eco,152.22,true
+73,6,ALI-00073,Azeite Extra Plus,24.56,true
+74,6,ALI-00074,Azeite Extra Lite,159.87,true
+75,6,ALI-00075,Cesta Gourmet Pro,135.76,true
+76,6,ALI-00076,Cesta Gourmet Ultra,149.64,true
+77,7,LIV-00077,Romance Best-seller Air,32.33,true
+78,7,LIV-00078,Romance Best-seller Max,79.16,true
+79,7,LIV-00079,Caderno Premium Air,50.78,true
+80,7,LIV-00080,Caderno Premium Max,132.78,true
+81,7,LIV-00081,Box de Livros Prime,140.4,true
+82,7,LIV-00082,Box de Livros Lite,116.96,true
+83,7,LIV-00083,Caneta Tinteiro Lite,68.86,true
+84,7,LIV-00084,Caneta Tinteiro Plus,105.68,true
+85,7,LIV-00085,Agenda 2026 Eco,136.45,true
+86,7,LIV-00086,Agenda 2026 Studio,75.95,true
+87,8,BRI-00087,Lego City Lite,55.41,true
+88,8,BRI-00088,Lego City Ultra,34.99,true
+89,8,BRI-00089,Boneca Articulada Air,304.51,true
+90,8,BRI-00090,Boneca Articulada Lite,28.42,true
+91,8,BRI-00091,Carrinho de Controle Essential,57.02,true
+92,8,BRI-00092,Carrinho de Controle Lite,39.92,true
+93,8,BRI-00093,Quebra-cabeça Eco,269.22,true
+94,8,BRI-00094,Quebra-cabeça Pro,157.28,true
+95,8,BRI-00095,Jogo de Tabuleiro Studio,281.14,true
+96,8,BRI-00096,Jogo de Tabuleiro Lite,368.59,true

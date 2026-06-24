@@ -9,12 +9,13 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 
-# Dataset sintético regenerável (seed/generate.py é a fonte da verdade)
-seed/data/
+# # Dataset sintético regenerável (seed/generate.py é a fonte da verdade)
+# seed/data/
 
-# Harness do agente e docs (mantidos locais; não versionar)
-.claude/
-docs/
-CLAUDE.md
-HANDOFF.md
-.mcp.json
+# # Harness do agente e docs (mantidos locais; não versionar)
+# .claude/
+# docs/
+# CLAUDE.md
+# HANDOFF.md
+# .mcp.json
+# apresentacao/

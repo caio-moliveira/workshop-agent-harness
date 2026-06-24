@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "negocio-ro": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["postgres-mcp", "--access-mode=restricted"],
+      "env": {
+        "DATABASE_URI": "postgresql://agente_ro:${AGENTE_RO_PASSWORD:-troque-esta-senha-ro}@localhost:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-bussola}"
+      }
+    }
+  }
+}
