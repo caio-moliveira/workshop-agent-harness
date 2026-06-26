@@ -5,11 +5,13 @@ from contextlib import asynccontextmanager
 from typing import cast
 
 from fastapi import FastAPI
+from langgraph.checkpoint.memory import InMemorySaver
 from minio import Minio
 from openai import OpenAI
 from qdrant_client import QdrantClient
 
 from agent.deps import Dependencias, executor_run_sql
+from agent.grafo import construir_grafo
 from agent.llm import criar_llm
 from agent.tools.embeddings import criar_embedder
 from agent.tools.search import ClienteQdrant
@@ -51,6 +53,9 @@ def _montar_dependencias(app: FastAPI, settings: Settings) -> None:
         hoje=settings.hoje_ancora,
     )
     app.state.artefatos = ArtefatosMinio(minio, bucket=settings.minio_bucket_relatorios)
+    # Grafo único com checkpointer em memória — lembra cada thread enquanto o processo vive
+    # (durabilidade real ficaria num PostgresSaver; o não-repetir já é durável via harness).
+    app.state.grafo = construir_grafo(app.state.deps, InMemorySaver())
 
 
 @asynccontextmanager

@@ -51,6 +51,8 @@ def validar_plano(plano: Plano) -> Plano:
 class ModeloLLM(Protocol):
     """Contrato mínimo que os nós exigem (permite fake em teste, sem chamar OpenAI)."""
 
+    async def condensar(self, pergunta: str, contexto_anterior: str) -> str: ...
+
     async def planejar(self, pergunta: str) -> Plano: ...
 
     async def diagnosticar(
@@ -58,6 +60,15 @@ class ModeloLLM(Protocol):
     ) -> str: ...
 
     async def recomendar(self, *, pergunta: str, prescricao: str, dados: str) -> str: ...
+
+
+_PROMPT_CONDENSAR = (
+    "Numa conversa de análise de vendas, o usuário fez um acompanhamento que pode depender "
+    "do contexto anterior. Reescreva a NOVA mensagem como uma pergunta AUTÔNOMA e completa, "
+    "herdando o que faltar do contexto (KPI, período, dimensão). Se já for autônoma, repita-a "
+    "igual. Responda SOMENTE a pergunta reescrita, sem aspas.\n\n"
+    "CONTEXTO ANTERIOR: {contexto}\nNOVA MENSAGEM: {pergunta}"
+)
 
 
 _PROMPT_PLANEJAR = (
@@ -90,6 +101,11 @@ class LLMOpenAI:
             kwargs["response_format"] = {"type": "json_object"}
         resp = await asyncio.to_thread(lambda: self._client.chat.completions.create(**kwargs))
         return resp.choices[0].message.content or ""
+
+    async def condensar(self, pergunta: str, contexto_anterior: str) -> str:
+        prompt = _PROMPT_CONDENSAR.format(contexto=contexto_anterior, pergunta=pergunta)
+        texto = await self._chat(self._rapido, prompt)
+        return texto.strip() or pergunta
 
     async def planejar(self, pergunta: str) -> Plano:
         prompt = _PROMPT_PLANEJAR.format(

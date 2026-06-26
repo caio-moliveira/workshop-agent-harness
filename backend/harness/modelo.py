@@ -33,6 +33,7 @@ def construir_tabela_runs(metadata: sa.MetaData, *, schema: str | None = "harnes
         sa.Column("fontes", _JSON, nullable=False),
         sa.Column("relatorio", sa.Text, nullable=False),
         sa.Column("artefatos", _JSON, nullable=False),
+        sa.Column("thread_id", sa.Uuid(as_uuid=False), nullable=True),  # agrupa a conversa
         schema=schema,
     )
 
@@ -55,6 +56,7 @@ class RegistroRun:
     fontes: list[str]
     relatorio: str
     artefatos: dict[str, str]
+    thread_id: str | None = None
     criado_em: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def como_linha(self) -> dict[str, Any]:
@@ -70,4 +72,5 @@ class RegistroRun:
             "fontes": self.fontes,
             "relatorio": self.relatorio,
             "artefatos": self.artefatos,
+            "thread_id": self.thread_id,
         }

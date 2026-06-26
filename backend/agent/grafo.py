@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
+from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.config import get_stream_writer
 from langgraph.graph import END, START, StateGraph
 
@@ -24,8 +25,17 @@ from agent.llm import Plano
 from agent.periodo import resolver_janelas
 from agent.saude import avaliar_saude
 from agent.sql_templates import montar_consultas
-from agent.state import EstadoAgente, Recomendacao
-from agent.tools.search import buscar_enriquecimento
+from agent.state import EstadoAgente, HitEnriquecimento, Recomendacao, TurnoHistorico
+from agent.tools.search import Trecho, buscar_enriquecimento
+
+
+def _para_hit(trecho: Trecho) -> HitEnriquecimento:
+    """Trecho -> dict serializável (o checkpointer persiste o estado entre turnos)."""
+    return {
+        "fonte": trecho.fonte,
+        "document": trecho.document,
+        "resultado": str(trecho.payload.get("resultado", "")),
+    }
 
 
 def _formatar_dados(dados: dict[str, list[dict[str, Any]]]) -> str:
@@ -40,13 +50,32 @@ def _formatar_dados(dados: dict[str, list[dict[str, Any]]]) -> str:
     return "\n".join(linhas)
 
 
-def construir_grafo(deps: Dependencias) -> Any:
-    """Compila o grafo com as dependências injetadas. Retorna o grafo executável."""
+def _pergunta_atual(state: EstadoAgente) -> str:
+    """A pergunta a investigar — a versão condensada (multi-turno) ou a original."""
+    return state.get("pergunta_resolvida") or state["pergunta"]
+
+
+def construir_grafo(deps: Dependencias, checkpointer: BaseCheckpointSaver | None = None) -> Any:
+    """Compila o grafo com as dependências injetadas. Com checkpointer, lembra o thread."""
+
+    async def condensar(state: EstadoAgente) -> dict[str, Any]:
+        """Multi-turno: reescreve um follow-up ('e no Sudeste?') como pergunta autônoma,
+        herdando KPI/período/dimensão do último turno (via histórico do checkpointer)."""
+        historico = state.get("historico", [])
+        if not historico:
+            return {"pergunta_resolvida": state["pergunta"]}
+        ultimo = historico[-1]
+        contexto = (
+            f"pergunta anterior: {ultimo['pergunta']}; KPI: {ultimo['kpi_alvo']}; "
+            f"dimensão: {ultimo['dimensao'] or '(agregado)'}"
+        )
+        resolvida = await deps.llm.condensar(state["pergunta"], contexto)
+        return {"pergunta_resolvida": resolvida}
 
     async def planejar(state: EstadoAgente) -> dict[str, Any]:
         """Escolhe KPI/dimensão (LLM, best-effort) e resolve o período-alvo (mês+1)."""
         writer = get_stream_writer()
-        plano: Plano = await deps.llm.planejar(state["pergunta"])
+        plano: Plano = await deps.llm.planejar(_pergunta_atual(state))
         if plano.precisa_clarificar:
             # Só quando NADA é resolvível — o roteamento manda para o nó de clarificação.
             return {
@@ -113,7 +142,7 @@ def construir_grafo(deps: Dependencias) -> Any:
         writer = get_stream_writer()
         dimensao = state.get("dimensao", {})
         kpi = state["kpi_alvo"]
-        pergunta = state["pergunta"]
+        pergunta = _pergunta_atual(state)
         diag = await buscar_enriquecimento(
             deps.qdrant,
             deps.embedder,
@@ -130,16 +159,19 @@ def construir_grafo(deps: Dependencias) -> Any:
             kpi_alvo=kpi,
             dimensao=dimensao,
         )
-        fontes = [t.fonte for t in diag] + [t.fonte for t in presc]
+        # Converte os Trechos em dicts serializáveis — o checkpointer persiste o estado.
+        diag_hits = [_para_hit(t) for t in diag]
+        presc_hits = [_para_hit(t) for t in presc]
+        fontes = [h["fonte"] for h in diag_hits] + [h["fonte"] for h in presc_hits]
         writer(evento("fontes", fontes=fontes))
-        return {"diagnostico_hits": diag, "prescricao_hits": presc, "fontes": fontes}
+        return {"diagnostico_hits": diag_hits, "prescricao_hits": presc_hits, "fontes": fontes}
 
     async def relatorio(state: EstadoAgente) -> dict[str, Any]:
         """Redige diagnóstico + recomendações. GROUNDING: 1 recomendação por fonte de prescrição."""
         writer = get_stream_writer()
-        pergunta = state["pergunta"]
+        pergunta = _pergunta_atual(state)
         dados_texto = state.get("dados_texto", "")
-        diag_docs = "\n".join(t.document for t in state.get("diagnostico_hits", []))
+        diag_docs = "\n".join(h["document"] for h in state.get("diagnostico_hits", []))
 
         diagnostico_texto = await deps.llm.diagnosticar(
             pergunta=pergunta,
@@ -149,21 +181,28 @@ def construir_grafo(deps: Dependencias) -> Any:
         )
         writer(evento("diagnostico", texto=diagnostico_texto))
 
+        # Não repetir: fontes recomendadas em turnos anteriores (durável via harness +
+        # histórico do thread) ficam fora desta rodada.
+        ja_recomendadas = set(state.get("fontes_ja_recomendadas", []))
+        for turno in state.get("historico", []):
+            ja_recomendadas.update(turno.get("fontes", []))
+
         # Grounding estrutural: itera sobre as prescrições recuperadas. Sem fonte → sem
         # recomendação (o LLM nunca inventa prescrição fora de um doc com fonte rastreável).
         recomendacoes: list[Recomendacao] = []
         for hit in state.get("prescricao_hits", []):
-            # Grounding firme: sem fonte rastreável de verdade, não há recomendação
-            # (descarta hit cujo payload veio sem `fonte` — fallback "?" não conta).
-            if not hit.fonte or hit.fonte == "?":
+            fonte = hit["fonte"]
+            if not fonte or fonte == "?":
                 continue
+            if fonte in ja_recomendadas:
+                continue  # já recomendada antes nesta conversa — não repete
             texto = await deps.llm.recomendar(
-                pergunta=pergunta, prescricao=hit.document, dados=dados_texto
+                pergunta=pergunta, prescricao=hit["document"], dados=dados_texto
             )
             rec: Recomendacao = {
                 "texto": texto,
-                "fonte": hit.fonte,
-                "resultado": str(hit.payload.get("resultado", "")),
+                "fonte": fonte,
+                "resultado": hit["resultado"],
             }
             recomendacoes.append(rec)
             writer(evento("recomendacao", **rec))
@@ -175,10 +214,18 @@ def construir_grafo(deps: Dependencias) -> Any:
             saude=state.get("saude", {}),
         )
         writer(evento("fim", fontes=state.get("fontes", [])))
+        # Anexa este turno ao histórico (persistido pelo checkpointer) p/ os próximos turnos.
+        turno_atual: TurnoHistorico = {
+            "pergunta": pergunta,
+            "kpi_alvo": state.get("kpi_alvo", ""),
+            "dimensao": state.get("dimensao", {}),
+            "fontes": [r["fonte"] for r in recomendacoes],
+        }
         return {
             "diagnostico_texto": diagnostico_texto,
             "recomendacoes": recomendacoes,
             "relatorio": relatorio_md,
+            "historico": [*state.get("historico", []), turno_atual],
         }
 
     def rota_pos_planejar(state: EstadoAgente) -> Literal["clarificar", "perna_quantitativa"]:
@@ -195,12 +242,14 @@ def construir_grafo(deps: Dependencias) -> Any:
 
     grafo = (
         StateGraph(EstadoAgente)
+        .add_node("condensar", condensar)
         .add_node("planejar", planejar)
         .add_node("clarificar", clarificar)
         .add_node("perna_quantitativa", perna_quantitativa)
         .add_node("enriquecer", enriquecer)
         .add_node("relatorio", relatorio)
-        .add_edge(START, "planejar")
+        .add_edge(START, "condensar")
+        .add_edge("condensar", "planejar")
         .add_conditional_edges("planejar", rota_pos_planejar, ["clarificar", "perna_quantitativa"])
         .add_edge("clarificar", END)
         .add_conditional_edges(
@@ -208,7 +257,7 @@ def construir_grafo(deps: Dependencias) -> Any:
         )
         .add_edge("enriquecer", "relatorio")
         .add_edge("relatorio", END)
-        .compile()
+        .compile(checkpointer=checkpointer)
     )
     return grafo
 

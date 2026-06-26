@@ -5,8 +5,6 @@ from __future__ import annotations
 
 from typing import Any, NotRequired, TypedDict
 
-from agent.tools.search import Trecho
-
 
 class Recomendacao(TypedDict):
     """Uma recomendação amarrada à fonte que a sustenta (grounding)."""
@@ -16,10 +14,31 @@ class Recomendacao(TypedDict):
     resultado: str  # positivo | negativo | nulo (do doc de prescrição)
 
 
-class EstadoAgente(TypedDict):
-    """Memória do grafo `planejar → perna_quantitativa → enriquecer → relatorio`."""
+class HitEnriquecimento(TypedDict):
+    """Trecho recuperado, em forma serializável (o checkpointer persiste o estado)."""
+
+    fonte: str
+    document: str
+    resultado: str
+
+
+class TurnoHistorico(TypedDict):
+    """Um turno passado da conversa (persistido pelo checkpointer por thread)."""
 
     pergunta: str
+    kpi_alvo: str
+    dimensao: dict[str, str]
+    fontes: list[str]  # fontes recomendadas naquele turno (para não repetir)
+
+
+class EstadoAgente(TypedDict):
+    """Memória do grafo `condensar → planejar → … → relatorio`. Persistida por thread."""
+
+    pergunta: str
+    # condensar (multi-turno)
+    pergunta_resolvida: NotRequired[str]  # follow-up reescrito como pergunta autônoma
+    historico: NotRequired[list[TurnoHistorico]]  # turnos anteriores (via checkpointer)
+    fontes_ja_recomendadas: NotRequired[list[str]]  # do harness (durável) + histórico
     # planejar
     periodo_alvo: NotRequired[str]
     kpi_alvo: NotRequired[str]
@@ -33,8 +52,8 @@ class EstadoAgente(TypedDict):
     dados_texto: NotRequired[str]
     saude: NotRequired[dict[str, Any]]  # veredito de saúde (fraco/motivo/parece_sazonal)
     # enriquecer
-    diagnostico_hits: NotRequired[list[Trecho]]
-    prescricao_hits: NotRequired[list[Trecho]]
+    diagnostico_hits: NotRequired[list[HitEnriquecimento]]
+    prescricao_hits: NotRequired[list[HitEnriquecimento]]
     fontes: NotRequired[list[str]]
     # relatorio
     diagnostico_texto: NotRequired[str]

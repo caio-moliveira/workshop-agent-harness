@@ -17,6 +17,9 @@ class FakeLLM:
         self._plano = plano
         self.recomendacoes_pedidas = 0
 
+    async def condensar(self, pergunta: str, contexto_anterior: str) -> str:
+        return pergunta
+
     async def planejar(self, pergunta: str) -> Plano:
         return self._plano
 
