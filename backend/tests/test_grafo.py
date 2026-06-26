@@ -28,11 +28,33 @@ class FakeLLM:
         return f"Recomendação baseada em: {prescricao[:30]}"
 
 
-def _fake_executor(linhas: list[dict[str, Any]]):
+def _exec_por_consulta(
+    *,
+    tendencia: list[dict[str, Any]],
+    sazonal: list[dict[str, Any]] | None = None,
+    meta: list[dict[str, Any]] | None = None,
+):
+    """Executor fake que distingue tendência/sazonal/meta pelo SQL (controla o roteamento)."""
+
     async def _exec(sql: str) -> ResultadoSQL:
+        if "valor_meta" in sql:
+            linhas = meta or []
+        elif "extract(year" in sql:
+            linhas = sazonal or []
+        else:
+            linhas = tendencia
         return ResultadoSQL(colunas=["mes", "valor"], linhas=linhas, sql_executado=sql)
 
     return _exec
+
+
+def _exec_fraco(valor: float = 0.477):
+    """Dados que classificam o KPI como FRACO (abaixo da meta) -> dispara enriquecimento."""
+    return _exec_por_consulta(
+        tendencia=[{"mes": "2026-01", "valor": valor}],
+        sazonal=[{"ano": 2025, "valor": valor + 0.1}],
+        meta=[{"valor_meta": valor + 0.2}],
+    )
 
 
 class FakeQdrant:
@@ -71,7 +93,7 @@ async def test_n1_grafo_produz_relatorio_com_fonte_por_recomendacao() -> None:
     )
     deps = Dependencias(
         llm=llm,
-        executar_sql=_fake_executor([{"mes": "2026-01", "valor": 0.61}]),
+        executar_sql=_exec_fraco(),
         qdrant=qdrant,
         embedder=_embedder,
         hoje=date(2026, 6, 16),
@@ -96,7 +118,7 @@ async def test_grounding_sem_prescricao_nao_gera_recomendacao() -> None:
     qdrant = FakeQdrant({"diagnostico": [_hit("minio://x.md", "ctx")], "prescricao": []})
     deps = Dependencias(
         llm=llm,
-        executar_sql=_fake_executor([{"mes": "2026-01", "valor": 0.61}]),
+        executar_sql=_exec_fraco(),
         qdrant=qdrant,
         embedder=_embedder,
         hoje=date(2026, 6, 16),
@@ -117,7 +139,7 @@ async def test_grounding_descarta_prescricao_sem_fonte() -> None:
     qdrant = FakeQdrant({"diagnostico": [], "prescricao": [sem_fonte]})
     deps = Dependencias(
         llm=llm,
-        executar_sql=_fake_executor([{"mes": "2026-01", "valor": 0.61}]),
+        executar_sql=_exec_fraco(),
         qdrant=qdrant,
         embedder=_embedder,
         hoje=date(2026, 6, 16),
@@ -137,7 +159,7 @@ async def test_stream_emite_eventos_incrementais() -> None:
     )
     deps = Dependencias(
         llm=llm,
-        executar_sql=_fake_executor([{"mes": "2026-01", "valor": 1000}]),
+        executar_sql=_exec_fraco(),
         qdrant=qdrant,
         embedder=_embedder,
         hoje=date(2026, 6, 16),
@@ -153,3 +175,101 @@ async def test_stream_emite_eventos_incrementais() -> None:
     assert "sql" in tipos
     assert "fontes" in tipos
     assert tipos[-1] == "fim"
+
+
+def _exec_saudavel(valor: float = 100.0):
+    """KPI no/acima da meta -> saudável -> NÃO enriquece."""
+    return _exec_por_consulta(
+        tendencia=[{"mes": "2026-01", "valor": valor}],
+        sazonal=[{"ano": 2025, "valor": valor - 5}],
+        meta=[{"valor_meta": valor - 10}],
+    )
+
+
+async def test_kpi_saudavel_nao_enriquece() -> None:
+    """KPI acima da meta (N4-like): roteamento NÃO dispara enriquecimento; sem recomendação."""
+    llm = FakeLLM(Plano(kpi_alvo="faturamento", dimensao={"regiao": "Nordeste"}))
+    qdrant = FakeQdrant(
+        {"diagnostico": [_hit("minio://d.md", "x")], "prescricao": [_hit("minio://p.md", "x")]}
+    )
+    deps = Dependencias(
+        llm=llm,
+        executar_sql=_exec_saudavel(),
+        qdrant=qdrant,
+        embedder=_embedder,
+        hoje=date(2026, 6, 16),
+    )
+    estado = await construir_grafo(deps).ainvoke(
+        {"pergunta": "Investir mais em Beleza no Nordeste?"}
+    )
+
+    assert estado["saude"]["fraco"] is False
+    assert estado.get("fontes", []) == []  # enriquecer foi pulado
+    assert estado["recomendacoes"] == []
+    assert "saudável" in estado["relatorio"].lower()
+
+
+async def test_controle_sazonal_sem_meta_nao_enriquece() -> None:
+    """N6-like: sem meta e valor recente não pior que anos anteriores -> saudável."""
+    llm = FakeLLM(Plano(kpi_alvo="ticket_medio", dimensao={}))
+    exec_sazonal = _exec_por_consulta(
+        tendencia=[{"mes": "2026-01", "valor": 250.0}],
+        sazonal=[{"ano": 2025, "valor": 240.0}, {"ano": 2024, "valor": 230.0}],
+        meta=[],  # sem meta cadastrada
+    )
+    deps = Dependencias(
+        llm=llm,
+        executar_sql=exec_sazonal,
+        qdrant=FakeQdrant({}),
+        embedder=_embedder,
+        hoje=date(2026, 6, 16),
+    )
+    estado = await construir_grafo(deps).ainvoke(
+        {"pergunta": "O ticket médio sobe no fim do ano — problema?"}
+    )
+
+    assert estado["saude"]["fraco"] is False
+    assert estado["recomendacoes"] == []
+
+
+async def test_pergunta_vaga_declara_premissas_sem_clarificar() -> None:
+    """Pergunta resolvível por default (best-effort): relatório com premissas, sem perguntar."""
+    llm = FakeLLM(Plano(kpi_alvo="faturamento", dimensao={}))
+    deps = Dependencias(
+        llm=llm,
+        executar_sql=_exec_fraco(1000.0),
+        qdrant=FakeQdrant({}),
+        embedder=_embedder,
+        hoje=date(2026, 6, 16),
+    )
+    estado = await construir_grafo(deps).ainvoke({"pergunta": "Como melhorar minhas vendas?"})
+
+    assert estado.get("precisa_clarificar") is False
+    assert "## Premissas" in estado["relatorio"]
+    assert "Preciso de mais contexto" not in estado["relatorio"]
+
+
+async def test_pergunta_irresolvivel_devolve_clarificacao() -> None:
+    """Só quando NADA é resolvível: devolve uma pergunta de clarificação, sem investigar."""
+    plano = Plano(
+        kpi_alvo="faturamento",
+        precisa_clarificar=True,
+        pergunta_clarificacao="Sobre qual indicador e período?",
+    )
+    llm = FakeLLM(plano)
+    deps = Dependencias(
+        llm=llm,
+        executar_sql=_exec_fraco(),
+        qdrant=FakeQdrant({}),
+        embedder=_embedder,
+        hoje=date(2026, 6, 16),
+    )
+    tipos = []
+    async for chunk in construir_grafo(deps).astream({"pergunta": "??"}, stream_mode="custom"):
+        tipos.append(chunk["tipo"])
+    estado = await construir_grafo(deps).ainvoke({"pergunta": "??"})
+
+    assert "clarificacao" in tipos
+    assert "sql" not in tipos  # não rodou a perna quantitativa
+    assert "Preciso de mais contexto" in estado["relatorio"]
+    assert llm.recomendacoes_pedidas == 0

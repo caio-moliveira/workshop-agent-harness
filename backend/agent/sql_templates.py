@@ -48,6 +48,45 @@ def _fragmento_dimensao(dimensao: dict[str, str]) -> tuple[str, str]:
     return join, f" AND {coluna} = '{_escapa(valor)}'"
 
 
+# Dimensão -> (join na metas, coluna de nome, demais eixos que devem ser NULL na meta).
+_META_DIM: dict[str, tuple[str, str, tuple[str, ...]]] = {
+    "regiao": (
+        "JOIN negocio.regioes dm ON dm.id = m.regiao_id",
+        "dm.nome",
+        ("canal_id", "categoria_id"),
+    ),
+    "canal": (
+        "JOIN negocio.canais dm ON dm.id = m.canal_id",
+        "dm.nome",
+        ("regiao_id", "categoria_id"),
+    ),
+}
+
+
+def _consulta_meta(kpi: str, dimensao: dict[str, str], j: JanelasTemporais) -> str:
+    """Meta de referência: a mais recente cadastrada ATÉ o mês-alvo.
+
+    O mês-alvo (mês+1) costuma ser futuro e não ter meta; usamos a meta mais recente
+    disponível (≤ alvo) como referência do alvo. Eixos não usados ficam NULL na tabela.
+    """
+    alvo = j.ano_alvo * 100 + j.mes_alvo
+    base = (
+        f"SELECT m.valor_meta AS valor_meta FROM negocio.metas m {{join}} "
+        f"WHERE m.kpi = '{_escapa(kpi)}' AND (m.ano * 100 + m.mes) <= {alvo}"
+    )
+    ordem = " ORDER BY m.ano DESC, m.mes DESC LIMIT 1"
+    if not dimensao:
+        return base.format(join="") + (
+            " AND m.regiao_id IS NULL AND m.canal_id IS NULL AND m.categoria_id IS NULL" + ordem
+        )
+    ((chave, valor),) = dimensao.items()
+    if chave not in _META_DIM:
+        raise TemplateNaoSuportadoError(f"Meta não suportada para dimensão {chave!r}.")
+    join, coluna, nulos = _META_DIM[chave]
+    cond_nulos = " ".join(f"AND m.{c} IS NULL" for c in nulos)
+    return base.format(join=join) + f" AND {coluna} = '{_escapa(valor)}' {cond_nulos}{ordem}"
+
+
 def _consultas_pedidos(kpi: str, dimensao: dict[str, str], j: JanelasTemporais) -> dict[str, str]:
     expr = _EXPR_KPI[kpi]
     join, cond = _fragmento_dimensao(dimensao)
@@ -72,7 +111,7 @@ def _consultas_pedidos(kpi: str, dimensao: dict[str, str], j: JanelasTemporais) 
         f"AND extract(year FROM p.data_pedido) IN ({anos}) "
         f"GROUP BY 1 ORDER BY 1"
     )
-    return {"tendencia": tendencia, "sazonal": sazonal}
+    return {"tendencia": tendencia, "sazonal": sazonal, "meta": _consulta_meta(kpi, dimensao, j)}
 
 
 def _consultas_conversao(dimensao: dict[str, str], j: JanelasTemporais) -> dict[str, str]:
@@ -107,7 +146,7 @@ def _consultas_conversao(dimensao: dict[str, str], j: JanelasTemporais) -> dict[
         f"      WHERE s.data >= DATE '{ini}' AND s.data < DATE '{fim}'{cond_s} "
         f"      GROUP BY 1) b USING (d) ORDER BY 1"
     )
-    return {"tendencia": tendencia}
+    return {"tendencia": tendencia, "meta": _consulta_meta("taxa_conversao", dimensao, j)}
 
 
 def montar_consultas(
