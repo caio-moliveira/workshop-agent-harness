@@ -3,6 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import make_url
 
 
 class Settings(BaseSettings):
@@ -16,13 +17,42 @@ class Settings(BaseSettings):
 
     app_name: str = "bussola-api"
 
-    # Conexão usada pela app. No compose vem como DATABASE_URL apontando p/ host=postgres.
+    # Conexão ADMIN (RW) usada pela app/migrations. No compose vem como DATABASE_URL
+    # apontando p/ host=postgres. O agente NUNCA usa esta conexão (invariante #2/#3).
     database_url: str = "postgresql+asyncpg://bussola:bussola@localhost:5432/bussola"
 
-    # Stores auxiliares — só consumidos em runtime nas fatias seguintes.
+    # Papel SOMENTE-LEITURA do agente (run_sql) — criado pela migration (#28). A URL RO
+    # é derivada da admin trocando só o usuário/senha (mesmo host/porta/db). Sem default:
+    # exigir a senha no ambiente evita criar/conectar um papel de login com senha conhecida.
+    agente_ro_user: str = "agente_ro"
+    agente_ro_password: str | None = None
+
+    # Guardrails determinísticos de run_sql aplicados no banco.
+    statement_timeout_ms: int = 5000
+    max_rows: int = 1000
+
+    # Stores auxiliares.
     qdrant_url: str = "http://localhost:6333"
     minio_endpoint: str = "localhost:9000"
     minio_bucket: str = "corpus"
+
+    # Embeddings da query (OpenAI) em runtime — só para embeddar a pergunta.
+    openai_api_key: str | None = None
+    embed_model: str = "text-embedding-3-large"
+    embed_dim: int = 3072
+
+    @property
+    def agente_ro_url(self) -> str:
+        """DSN somente-leitura: a admin com usuário/senha trocados pelo papel RO."""
+        if not self.agente_ro_password:
+            raise RuntimeError(
+                "AGENTE_RO_PASSWORD ausente — defina no ambiente/.env antes de usar o papel RO."
+            )
+        url = make_url(self.database_url).set(
+            username=self.agente_ro_user,
+            password=self.agente_ro_password,
+        )
+        return url.render_as_string(hide_password=False)
 
 
 @lru_cache
