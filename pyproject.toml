@@ -35,7 +35,8 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-pythonpath = ["backend"]
+# "." na raiz p/ importar o pacote evals nos testes offline (runner vive fora do backend).
+pythonpath = ["backend", "."]
 testpaths = ["backend/tests"]
 asyncio_mode = "auto"
 
