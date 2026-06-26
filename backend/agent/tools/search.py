@@ -43,13 +43,17 @@ class Trecho:
 
 
 class ClienteQdrant(Protocol):
-    """Contrato mínimo do cliente Qdrant (permite fake em teste)."""
+    """Contrato mínimo do cliente Qdrant (permite fake em teste).
+
+    Tipos frouxos (`Any`) de propósito: o `QdrantClient` real tem uma assinatura bem mais
+    ampla; o que importa é o nó chamar com `collection_name`/`query`/`query_filter`/`limit`.
+    """
 
     def query_points(
         self,
         collection_name: str,
-        query: list[float],
-        query_filter: qmodels.Filter | None,
+        query: Any,
+        query_filter: Any,
         limit: int,
     ) -> Any: ...
 
@@ -83,18 +87,16 @@ async def buscar(
     """Embeda a query, aplica o filtro e devolve os trechos. Coleção escolhida pelo nó.
 
     Para coleções de enriquecimento (`diagnostico`/`prescricao`) o caminho correto é
-    `buscar_enriquecimento` — aqui exigimos `periodo_referencia` + `kpi_alvo` no filtro
-    para que o invariante não dependa da disciplina do nó chamador.
+    `buscar_enriquecimento` — aqui exigimos `kpi_alvo` no filtro para que o invariante
+    de escopo não dependa da disciplina do nó chamador. `periodo_referencia` é opcional
+    (ADR 0002: as prescrições "que funcionaram" são históricas, de vários períodos).
     """
     if colecao not in COLECOES:
         raise ColecaoInvalidaError(f"Coleção desconhecida: {colecao!r}.")
-    if colecao in COLECOES_ENRIQUECIMENTO:
-        faltando = {"periodo_referencia", "kpi_alvo"} - set(filtros)
-        if faltando:
-            raise FiltroInseguroError(
-                f"Busca em {colecao!r} exige {sorted(faltando)} no filtro "
-                "(use buscar_enriquecimento)."
-            )
+    if colecao in COLECOES_ENRIQUECIMENTO and "kpi_alvo" not in filtros:
+        raise FiltroInseguroError(
+            f"Busca em {colecao!r} exige 'kpi_alvo' no filtro (use buscar_enriquecimento)."
+        )
     filtro = montar_filtro(filtros)
     vetor = await embedder(query)
     resposta = await asyncio.to_thread(
@@ -122,12 +124,17 @@ async def buscar_enriquecimento(
     *,
     colecao: str,
     query: str,
-    periodo_referencia: str,
     kpi_alvo: str,
     dimensao: Mapping[str, str | int],
+    periodo_referencia: str | None = None,
     limit: int = 5,
 ) -> list[Trecho]:
-    """Busca de enriquecimento: garante periodo_referencia + kpi_alvo + dimensão no filtro."""
+    """Busca de enriquecimento: garante kpi_alvo + dimensão; periodo_referencia é opcional.
+
+    ADR 0002: o invariante é filtrar pela *família de período de negócio* (nunca
+    `data_ingestao`); como as prescrições históricas vivem em vários `periodo_referencia`,
+    ele não é exigido — só aplicado quando o nó quer recortar um período específico (sazonal).
+    """
     if colecao not in COLECOES_ENRIQUECIMENTO:
         raise ColecaoInvalidaError(
             f"Enriquecimento só em {sorted(COLECOES_ENRIQUECIMENTO)}, não em {colecao!r}."
@@ -136,11 +143,9 @@ async def buscar_enriquecimento(
         raise FiltroInseguroError("O enriquecimento exige ao menos uma dimensão (ex.: regiao).")
     if _CAMPO_PROIBIDO in dimensao:
         raise FiltroInseguroError(f"Dimensão não pode ser {_CAMPO_PROIBIDO!r}.")
-    filtros: dict[str, str | int] = {
-        "periodo_referencia": periodo_referencia,
-        "kpi_alvo": kpi_alvo,
-        **dimensao,
-    }
+    filtros: dict[str, str | int] = {"kpi_alvo": kpi_alvo, **dimensao}
+    if periodo_referencia is not None:
+        filtros["periodo_referencia"] = periodo_referencia
     return await buscar(
         client, embedder, colecao=colecao, query=query, filtros=filtros, limit=limit
     )

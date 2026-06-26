@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -34,12 +35,23 @@ class Settings(BaseSettings):
     # Stores auxiliares.
     qdrant_url: str = "http://localhost:6333"
     minio_endpoint: str = "localhost:9000"
+    minio_root_user: str = "minioadmin"
+    minio_root_password: str = "minioadmin"
     minio_bucket: str = "corpus"
+    # Bucket dos artefatos gerados (relatórios/SQL) — separado do corpus de leitura.
+    minio_bucket_relatorios: str = "relatorios"
 
     # Embeddings da query (OpenAI) em runtime — só para embeddar a pergunta.
     openai_api_key: str | None = None
     embed_model: str = "text-embedding-3-large"
     embed_dim: int = 3072
+
+    # Modelos do agente (provider OpenAI). Não hardcode model id nos nós — leia daqui.
+    llm_model_forte: str = "gpt-4o"
+    llm_model_rapido: str = "gpt-4o-mini"
+
+    # Âncora temporal: "hoje" injetável (determinismo dos evals). "próximo mês" = +1 daqui.
+    hoje_ancora: date = date(2026, 6, 16)
 
     @property
     def agente_ro_url(self) -> str:

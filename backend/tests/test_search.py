@@ -67,8 +67,8 @@ def test_montar_filtro_inclui_todas_as_chaves() -> None:
 
 
 # --- buscar_enriquecimento --------------------------------------------------- #
-async def test_enriquecimento_sempre_filtra_periodo_dim_kpi() -> None:
-    """Toda busca de enriquecimento carrega periodo_referencia + kpi_alvo + dimensão."""
+async def test_enriquecimento_filtra_kpi_e_dimensao_sem_periodo() -> None:
+    """Por padrão (ADR 0002) o filtro carrega kpi_alvo + dimensão e NÃO força periodo_referencia."""
     client = FakeClient(
         points=[SimpleNamespace(score=0.8, payload={"fonte": "minio://x", "document": "d"})]
     )
@@ -77,14 +77,30 @@ async def test_enriquecimento_sempre_filtra_periodo_dim_kpi() -> None:
         _embedder_fake,
         colecao="prescricao",
         query="como recuperar a recompra",
-        periodo_referencia="2026-07",
         kpi_alvo="taxa_recompra",
         dimensao={"regiao": "Sul"},
     )
     chaves = _chaves_do_filtro(client.ultima_chamada["query_filter"])  # type: ignore[index]
-    assert {"periodo_referencia", "kpi_alvo", "regiao"} <= chaves
+    assert {"kpi_alvo", "regiao"} <= chaves
+    assert "periodo_referencia" not in chaves  # histórico não é recortado por período-alvo
     assert "data_ingestao" not in chaves
     assert trechos[0].fonte == "minio://x"
+
+
+async def test_enriquecimento_aplica_periodo_quando_pedido() -> None:
+    """Quando o nó quer recorte sazonal, periodo_referencia entra no filtro."""
+    client = FakeClient(points=[])
+    await buscar_enriquecimento(
+        client,
+        _embedder_fake,
+        colecao="prescricao",
+        query="black friday",
+        kpi_alvo="faturamento",
+        dimensao={"canal": "marketplace"},
+        periodo_referencia="2025-11",
+    )
+    chaves = _chaves_do_filtro(client.ultima_chamada["query_filter"])  # type: ignore[index]
+    assert {"kpi_alvo", "canal", "periodo_referencia"} <= chaves
 
 
 async def test_enriquecimento_recusa_camada_semantica() -> None:
@@ -96,7 +112,6 @@ async def test_enriquecimento_recusa_camada_semantica() -> None:
             _embedder_fake,
             colecao="camada_semantica",
             query="x",
-            periodo_referencia="2026-07",
             kpi_alvo="faturamento",
             dimensao={"regiao": "Sul"},
         )
@@ -110,7 +125,6 @@ async def test_enriquecimento_exige_dimensao() -> None:
             _embedder_fake,
             colecao="diagnostico",
             query="x",
-            periodo_referencia="2026-07",
             kpi_alvo="faturamento",
             dimensao={},
         )
@@ -124,7 +138,6 @@ async def test_enriquecimento_recusa_data_ingestao_na_dimensao() -> None:
             _embedder_fake,
             colecao="diagnostico",
             query="x",
-            periodo_referencia="2026-07",
             kpi_alvo="faturamento",
             dimensao={"data_ingestao": "2026-06-16"},
         )
