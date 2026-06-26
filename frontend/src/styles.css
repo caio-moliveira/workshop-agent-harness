@@ -1,0 +1,293 @@
+:root {
+  --bg: #0f172a;
+  --painel: #ffffff;
+  --texto: #0f172a;
+  --suave: #64748b;
+  --borda: #e2e8f0;
+  --azul: #2563eb;
+  --verde: #16a34a;
+  --vermelho: #dc2626;
+  --amarelo: #ca8a04;
+  --cinza: #94a3b8;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(180deg, #f1f5f9, #e2e8f0);
+  color: var(--texto);
+}
+
+.app {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+
+.cabecalho h1 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+}
+
+.cabecalho p {
+  margin: 4px 0 24px;
+  color: var(--suave);
+}
+
+.entrada {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.entrada input {
+  flex: 1;
+  padding: 12px 14px;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  font-size: 15px;
+  background: var(--painel);
+}
+
+.entrada input:focus {
+  outline: 2px solid var(--azul);
+  border-color: transparent;
+}
+
+.entrada button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 10px;
+  background: var(--azul);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.entrada button:disabled {
+  background: var(--cinza);
+  cursor: not-allowed;
+}
+
+.estado {
+  padding: 28px;
+  border: 1px dashed var(--borda);
+  border-radius: 12px;
+  background: var(--painel);
+  color: var(--suave);
+  text-align: center;
+}
+
+.estado-vazio .exemplo {
+  color: var(--texto);
+  font-style: italic;
+}
+
+.estado-carregando {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--texto);
+}
+
+.estado-erro {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-color: var(--vermelho);
+  color: var(--vermelho);
+}
+
+.pontos {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.pontos i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--azul);
+  animation: pulsar 1s infinite ease-in-out;
+}
+
+.pontos i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.pontos i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes pulsar {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.relatorio {
+  background: var(--painel);
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.relatorio h2,
+.relatorio h3 {
+  margin: 0 0 8px;
+}
+
+.bloco {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--borda);
+}
+
+.bloco:last-of-type {
+  border-bottom: none;
+}
+
+.bloco p {
+  margin: 6px 0;
+  line-height: 1.55;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  background: #eff6ff;
+  color: var(--azul);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.saude {
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.saude-fraco {
+  background: #fef2f2;
+  color: var(--vermelho);
+}
+
+.saude-ok {
+  background: #f0fdf4;
+  color: var(--verde);
+}
+
+.recomendacoes li {
+  margin-bottom: 14px;
+}
+
+.rec-fonte {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.rec-fonte code,
+.fontes code {
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.resultado {
+  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.resultado-positivo {
+  background: #dcfce7;
+  color: var(--verde);
+}
+
+.resultado-negativo {
+  background: #fee2e2;
+  color: var(--vermelho);
+}
+
+.resultado-nulo,
+.resultado-na {
+  background: #f1f5f9;
+  color: var(--suave);
+}
+
+.inspetor {
+  margin: 12px 0;
+}
+
+.inspetor-toggle {
+  background: none;
+  border: none;
+  color: var(--azul);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+  font-size: 14px;
+}
+
+.inspetor-corpo {
+  margin-top: 8px;
+}
+
+.sql-bloco {
+  margin-bottom: 10px;
+}
+
+.sql-nome {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--suave);
+  text-transform: uppercase;
+}
+
+pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 12.5px;
+  margin: 4px 0 0;
+}
+
+.fontes ul {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.run-id {
+  color: var(--cinza);
+  font-size: 12px;
+  margin-top: 16px;
+}
