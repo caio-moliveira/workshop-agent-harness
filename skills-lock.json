@@ -139,12 +139,6 @@
       "skillPath": "skills/react-ui-patterns/SKILL.md",
       "computedHash": "aba633c645a5bc91119e1d3ef86c542a985581b280fda905a6c198f5e4dfa22e"
     },
-    "setup-matt-pocock-skills": {
-      "source": "mattpocock/skills",
-      "sourceType": "github",
-      "skillPath": "skills/engineering/setup-matt-pocock-skills/SKILL.md",
-      "computedHash": "f686b246e95afeaeeb3ff21b0f9f2c1ab29b02958468170cc9802fb477508488"
-    },
     "swarm": {
       "source": "langchain-ai/langchain-skills",
       "sourceType": "github",

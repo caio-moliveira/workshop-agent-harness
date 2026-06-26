@@ -44,7 +44,7 @@ Quatro coisas foram preparadas **antes** de a parte ao vivo começar:
 
 As skills foram baixadas e travadas em `skills-lock.json` (fonte + `skillPath` + hash de cada uma):
 
-- **Matt Pocock** — skills de processo (`grill-me`, `to-prd`, `to-issues`, `setup-matt-pocock-skills`,
+- **Matt Pocock** — skills de processo (`grill-me`, `to-prd`, `to-issues`,
   `tdd`, `diagnose`, `triage`, `handoff`, `write-a-skill`, `zoom-out`…):
   <https://github.com/mattpocock/skills>
 - **LangChain / LangGraph / Deep Agents** (`ecosystem-primer`, `langchain-*`, `langgraph-*`,
@@ -72,9 +72,8 @@ de codar, validar a cada fatia.**
 | 1 | `/grill-me` | Matt Pocock | `ideia.md` | entendimento afiado | ✅ |
 | 2 | `/to-prd` | Matt Pocock | sessão do grill | **`PRD.md`** | ✅ |
 | 3 | **harness à mão** | nós (ao vivo) | `PRD.md` | `.claude/` (rules · hooks · MCP · subagente · comandos · métricas) | ✅ |
-| 4 | `/setup-matt-pocock-skills` | Matt Pocock | repo + tracker | issue tracker no GitHub | ⬜ |
-| 5 | `/to-issues` | Matt Pocock | `PRD.md` | issues *ready-for-agent* | ⬜ |
-| 6 | implementar | — | issues | código (gate + revisor + scorecard) | ⬜ |
+| 4 | `/to-issues` | Matt Pocock | `PRD.md` | issues *ready-for-agent* | ⬜ |
+| 5 | implementar | — | issues | código (gate + revisor + scorecard) | ⬜ |
 
 **0. `ideia.md` — a semente.** Documento solto com a ideia inicial. Fica **local e não versionado**,
 mas é a origem de toda a cadeia.
@@ -90,20 +89,17 @@ os arquivos do harness **um a um**, entendendo o papel de cada peça. Detalhe na
 → **Output:** `CLAUDE.md`, `.claude/rules/`, `.claude/agents/`, `.claude/commands/`,
 `.claude/settings.json` (hooks + permissões), `.mcp.json` e `metrics/`.
 
-**4. `/setup-matt-pocock-skills` — preparar o tracker.** Configura o GitHub como issue tracker e os
-labels de triagem.
+**4. `/to-issues` — fatiar o PRD.** Quebra o `PRD.md` em issues *ready-for-agent* (fatias verticais
+tracer-bullet), cada uma independentemente "grabbable". O tracker (GitHub via `gh`) e o vocabulário de
+labels já estão documentados no `CLAUDE.md` — não há passo de setup separado.
 
-**5. `/to-issues` — fatiar o PRD.** Quebra o `PRD.md` em issues *ready-for-agent* (fatias verticais
-tracer-bullet), cada uma independentemente "grabbable".
-
-**6. Implementar.** O ciclo roda fatia a fatia com **gate automático** (hook: `ruff` + `mypy` +
+**5. Implementar.** O ciclo roda fatia a fatia com **gate automático** (hook: `ruff` + `mypy` +
 `pytest`), **revisão** pelo subagente `revisor-codigo` e **métricas de entrega** medidas contra a
 Definição de Pronto (`/scorecard`).
 
 ```bash
 # o harness já está montado (.claude/). Próximos comandos do workshop:
-/setup-matt-pocock-skills     # tracker = GitHub                          (passo 4)
-/to-issues                    # PRD.md -> issues ready-for-agent           (passo 5)
+/to-issues                    # PRD.md -> issues ready-for-agent           (passo 4)
 # implementar issue a issue: gate (hook) + /validar + revisor-codigo + /scorecard
 ```
 
