@@ -38,6 +38,10 @@ dev = [
 pythonpath = ["backend"]
 testpaths = ["backend/tests"]
 asyncio_mode = "auto"
+# Desabilita o plugin pytest do langsmith: ele importa `xxhash` (DLL C) só para
+# carregar, e em máquinas com Windows Application Control essa DLL é bloqueada,
+# derrubando a coleção. Não usamos tracing do langsmith nos testes (offline, sem LLM).
+addopts = "-p no:langsmith_plugin"
 
 [tool.mypy]
 python_version = "3.13"
