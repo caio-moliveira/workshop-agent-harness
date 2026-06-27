@@ -3,30 +3,30 @@
 # RNF-05: sobe via `docker compose up -d`. Antes: `cp .env.example .env` e ajuste os segredos.
 # Stores: postgres (schema negocio via seed/), qdrant (3 coleções) e minio (corpus bruto).
 
-name: bussola
+name: workshop
 
 services:
   postgres:
     image: postgres:17
-    container_name: bussola-postgres
+    container_name: workshop-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-bussola}
-      POSTGRES_USER: ${POSTGRES_USER:-bussola}
+      POSTGRES_DB: ${POSTGRES_DB:-workshop}
+      POSTGRES_USER: ${POSTGRES_USER:-workshop}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bussola} -d ${POSTGRES_DB:-bussola}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-workshop} -d ${POSTGRES_DB:-workshop}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   qdrant:
     image: qdrant/qdrant:latest          # (pinar versão em produção — RNF-05)
-    container_name: bussola-qdrant
+    container_name: workshop-qdrant
     restart: unless-stopped
     ports:
       - "${QDRANT_PORT:-6333}:6333"       # REST/HTTP
@@ -36,7 +36,7 @@ services:
 
   minio:
     image: minio/minio:latest            # (pinar versão em produção — RNF-05)
-    container_name: bussola-minio
+    container_name: workshop-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -52,14 +52,14 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    container_name: bussola-api
+    container_name: workshop-api
     restart: unless-stopped
     # Chaves (ANTHROPIC/OPENAI/AGENTE_RO/Langfuse) vêm do .env. `environment` abaixo
     # tem precedência sobre env_file e fixa os hosts internos da rede do compose.
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-bussola}:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}@postgres:5432/${POSTGRES_DB:-bussola}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-workshop}:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}@postgres:5432/${POSTGRES_DB:-workshop}
       QDRANT_URL: http://qdrant:6333
       # Host interno do MinIO (o .env usa localhost:9000, válido só fora do compose).
       MINIO_ENDPOINT: minio:9000
@@ -84,7 +84,7 @@ services:
     build:
       context: .
       dockerfile: infra/nginx/Dockerfile
-    container_name: bussola-nginx
+    container_name: workshop-nginx
     restart: unless-stopped
     ports:
       - "${NGINX_PORT:-8080}:80"
