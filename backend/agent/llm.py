@@ -21,10 +21,16 @@ from agent.catalogo import KPIS, VALORES_DIMENSAO, dimensao_valida
 
 
 class Plano(BaseModel):
-    """O que investigar — escolhido pelo LLM no nó `planejar`, validado contra o catálogo."""
+    """O que investigar — escolhido pelo LLM no nó `planejar`, validado contra o catálogo.
+
+    `precisa_clarificar` só é True quando NADA é resolvível (best-effort: na dúvida, o LLM
+    assume um default sensato e o declara como premissa, em vez de devolver pergunta).
+    """
 
     kpi_alvo: str
     dimensao: dict[str, str] = Field(default_factory=dict)
+    precisa_clarificar: bool = False
+    pergunta_clarificacao: str = ""
 
 
 class PlanoInvalidoError(ValueError):
@@ -33,6 +39,8 @@ class PlanoInvalidoError(ValueError):
 
 def validar_plano(plano: Plano) -> Plano:
     """Garante que o plano usa vocabulário conhecido — barra alucinação de KPI/dimensão."""
+    if plano.precisa_clarificar:
+        return plano  # nada a validar — o fluxo vai pedir clarificação, não investigar
     if plano.kpi_alvo not in KPIS:
         raise PlanoInvalidoError(f"KPI fora do catálogo: {plano.kpi_alvo!r}.")
     if not dimensao_valida(plano.dimensao):
@@ -55,8 +63,12 @@ class ModeloLLM(Protocol):
 _PROMPT_PLANEJAR = (
     "Você roteia perguntas de um gestor comercial para um KPI e uma dimensão. "
     "KPIs válidos: {kpis}. Dimensões e valores válidos: {dims}. "
-    'Responda SOMENTE um JSON {{"kpi_alvo": <kpi>, "dimensao": {{<chave>: <valor>}}}}. '
-    "Use dimensao vazia se a pergunta for agregada. Pergunta: {pergunta}"
+    "BEST-EFFORT: diante de ambiguidade, ASSUMA um default sensato (ex.: kpi_alvo='faturamento', "
+    "dimensao vazia=agregado) — não peça esclarecimento. Só marque precisa_clarificar=true quando "
+    "a pergunta for IMPOSSÍVEL de resolver (vazia/sem sentido de negócio). "
+    'Responda SOMENTE um JSON {{"kpi_alvo": <kpi>, "dimensao": {{<chave>: <valor>}}, '
+    '"precisa_clarificar": <bool>, "pergunta_clarificacao": "<texto se precisa_clarificar>"}}. '
+    "Pergunta: {pergunta}"
 )
 
 

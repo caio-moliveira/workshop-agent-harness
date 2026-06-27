@@ -62,9 +62,15 @@ async def _embedder(_t: str) -> list[float]:
 
 
 async def _executor(sql: str) -> ResultadoSQL:
-    return ResultadoSQL(
-        colunas=["mes", "valor"], linhas=[{"mes": "2026-01", "valor": 0.477}], sql_executado=sql
-    )
+    # Dados que classificam o KPI como FRACO (abaixo da meta) -> dispara enriquecimento.
+    linhas: list[dict[str, Any]]
+    if "valor_meta" in sql:
+        linhas = [{"valor_meta": 0.8}]
+    elif "extract(year" in sql:
+        linhas = [{"ano": 2025, "valor": 0.61}]
+    else:
+        linhas = [{"mes": "2026-01", "valor": 0.477}]
+    return ResultadoSQL(colunas=["mes", "valor"], linhas=linhas, sql_executado=sql)
 
 
 class FakeArtefatos:

@@ -25,10 +25,13 @@ class EstadoAgente(TypedDict):
     kpi_alvo: NotRequired[str]
     dimensao: NotRequired[dict[str, str]]
     premissas: NotRequired[dict[str, Any]]
+    precisa_clarificar: NotRequired[bool]
+    clarificacao: NotRequired[str]
     # perna_quantitativa
     sql_executado: NotRequired[list[str]]
     dados: NotRequired[dict[str, list[dict[str, Any]]]]
     dados_texto: NotRequired[str]
+    saude: NotRequired[dict[str, Any]]  # veredito de saúde (fraco/motivo/parece_sazonal)
     # enriquecer
     diagnostico_hits: NotRequired[list[Trecho]]
     prescricao_hits: NotRequired[list[Trecho]]

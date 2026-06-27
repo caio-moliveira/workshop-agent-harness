@@ -8,7 +8,17 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-TipoEvento = Literal["premissas", "sql", "dados", "fontes", "diagnostico", "recomendacao", "fim"]
+TipoEvento = Literal[
+    "premissas",
+    "sql",
+    "dados",
+    "saude",
+    "fontes",
+    "diagnostico",
+    "recomendacao",
+    "clarificacao",
+    "fim",
+]
 
 
 def evento(tipo: TipoEvento, **dados: Any) -> dict[str, Any]:
