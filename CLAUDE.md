@@ -22,8 +22,9 @@ Embeddings OpenAI `text-embedding-3-large` (3072d), só para embeddar a *query* 
   Nunca `INSERT/UPDATE/DELETE/DDL`.
 - **App é runtime puro**: nenhuma ingestão/carga no `backend/`. A ingestão vive só em `seed/` (já
   executada) — não a reproduza nem a chame em runtime.
-- Enriquecimento Qdrant **sempre filtrado** por `periodo_referencia` + dimensão + `kpi_alvo`.
-  **Nunca** filtre por `data_ingestao` (`periodo_referencia ≠ data_ingestao`).
+- Enriquecimento Qdrant **sempre filtrado** por `kpi_alvo` + dimensão (`periodo_referencia`
+  opcional, p/ recorte sazonal — ver ADR 0002). **Nunca** filtre por `data_ingestao`
+  (`periodo_referencia ≠ data_ingestao`).
 - Toda recomendação prescritiva **amarrada a uma fonte** recuperada. Prescrição sem fonte = falha.
 - Grafo LangGraph **determinístico**: o LLM decide só dentro de nós. `search` é tool única
   parametrizada pela coleção, escolhida pelo nó (não por laço do LLM).
