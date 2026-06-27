@@ -9,13 +9,15 @@ from typing import Any
 import pytest
 import sqlalchemy as sa
 from httpx import ASGITransport, AsyncClient
+from langgraph.checkpoint.memory import InMemorySaver
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 from agent.deps import Dependencias
+from agent.grafo import construir_grafo
 from agent.llm import Plano
 from agent.tools.run_sql import ResultadoSQL
-from app.dependencies import get_artefatos, get_deps, get_engine
+from app.dependencies import get_artefatos, get_engine, get_grafo
 from app.main import criar_app
 from app.services.chat import _sse
 from harness.modelo import construir_tabela_runs
@@ -29,6 +31,9 @@ def test_sse_serializa_decimal_do_banco() -> None:
 
 
 class FakeLLM:
+    async def condensar(self, pergunta: str, contexto_anterior: str) -> str:
+        return pergunta
+
     async def planejar(self, pergunta: str) -> Plano:
         return Plano(kpi_alvo="taxa_recompra", dimensao={"regiao": "Sul"})
 
@@ -101,10 +106,11 @@ async def app_e_engine() -> AsyncIterator[tuple[Any, AsyncEngine, sa.Table]]:
         embedder=_embedder,
         hoje=date(2026, 6, 16),
     )
+    grafo = construir_grafo(deps, InMemorySaver())
     artefatos = FakeArtefatos()
 
     app = criar_app()
-    app.dependency_overrides[get_deps] = lambda: deps
+    app.dependency_overrides[get_grafo] = lambda: grafo
     app.dependency_overrides[get_engine] = lambda: eng
     app.dependency_overrides[get_artefatos] = lambda: artefatos
     yield app, eng, tabela

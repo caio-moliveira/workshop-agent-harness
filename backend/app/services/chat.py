@@ -17,11 +17,9 @@ from typing import Any
 import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from agent.deps import Dependencias
-from agent.grafo import construir_grafo
 from harness.artefatos import Artefatos
 from harness.modelo import RUNS, RegistroRun
-from harness.repo import gravar_run
+from harness.repo import fontes_recomendadas_da_thread, gravar_run
 
 
 def _json_safe(obj: Any) -> Any:
@@ -43,21 +41,25 @@ def _sse(payload: dict[str, Any]) -> str:
 async def gerar_eventos_sse(
     pergunta: str,
     *,
-    deps: Dependencias,
+    grafo: Any,
     engine_admin: AsyncEngine,
     artefatos: Artefatos,
+    thread_id: str | None = None,
     tabela: sa.Table | None = None,
 ) -> AsyncIterator[str]:
-    """Roda o grafo, faz streaming dos eventos e, ao fim, persiste run + artefatos."""
+    """Roda o grafo (com checkpointer por thread), faz streaming e persiste run + artefatos."""
     tabela = tabela if tabela is not None else RUNS  # resolvido em runtime (testável)
-    grafo = construir_grafo(deps)
+    thread_id = thread_id or str(uuid.uuid4())
+    # Não repetir: fontes já recomendadas nesta conversa (fonte durável = harness).
+    fontes_ja = await fontes_recomendadas_da_thread(engine_admin, thread_id, tabela=tabela)
+    entrada = {"pergunta": pergunta, "fontes_ja_recomendadas": sorted(fontes_ja)}
+    config = {"configurable": {"thread_id": thread_id}}
+
     estado_final: dict[str, Any] = {}
     erro: str | None = None
 
     try:
-        async for modo, chunk in grafo.astream(
-            {"pergunta": pergunta}, stream_mode=["custom", "values"]
-        ):
+        async for modo, chunk in grafo.astream(entrada, config, stream_mode=["custom", "values"]):
             if modo == "custom":
                 yield _sse(chunk)
             else:  # "values": fotografia do estado; a última é o estado final
@@ -96,6 +98,15 @@ async def gerar_eventos_sse(
         fontes=estado_final.get("fontes", []),
         relatorio=relatorio,
         artefatos=artefatos_uris,
+        thread_id=thread_id,
     )
     await gravar_run(engine_admin, registro, tabela=tabela)
-    yield _sse({"tipo": "run", "run_id": run_id, "erro": erro, "artefatos": artefatos_uris})
+    yield _sse(
+        {
+            "tipo": "run",
+            "run_id": run_id,
+            "thread_id": thread_id,
+            "erro": erro,
+            "artefatos": artefatos_uris,
+        }
+    )

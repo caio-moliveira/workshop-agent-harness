@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from agent.deps import Dependencias
 from harness.artefatos import Artefatos
 
 
@@ -13,10 +14,9 @@ def get_engine(request: Request) -> AsyncEngine:
     return engine
 
 
-def get_deps(request: Request) -> Dependencias:
-    """Dependências do agente (LLM, executor SQL RO, Qdrant, embedder) — montadas no lifespan."""
-    deps: Dependencias = request.app.state.deps
-    return deps
+def get_grafo(request: Request) -> Any:
+    """Grafo do agente, já compilado com checkpointer no lifespan (lembra cada thread)."""
+    return request.app.state.grafo
 
 
 def get_artefatos(request: Request) -> Artefatos:

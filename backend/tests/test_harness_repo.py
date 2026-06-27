@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import AsyncIterator
+from typing import Any
 
 import pytest
 import sqlalchemy as sa
@@ -9,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 from harness.modelo import RegistroRun, construir_tabela_runs
-from harness.repo import gravar_run
+from harness.repo import fontes_recomendadas_da_thread, gravar_run
 
 
 @pytest.fixture
@@ -54,3 +55,44 @@ async def test_gravar_run_persiste_e_retorna_id(
     assert linha["kpi_alvo"] == "taxa_recompra"
     assert linha["dimensao"] == {"regiao": "Sul"}
     assert linha["fontes"] == ["minio://corpus/prescricao/2024-08-sul-frete.md"]
+
+
+async def test_fontes_recomendadas_da_thread_agrega_por_thread(
+    engine_e_tabela: tuple[AsyncEngine, sa.Table],
+) -> None:
+    """Agrega as fontes dos runs de uma thread; outra thread fica isolada."""
+    engine, tabela = engine_e_tabela
+    base: dict[str, Any] = dict(
+        periodo_alvo="2026-07",
+        kpi_alvo="taxa_recompra",
+        dimensao={"regiao": "Sul"},
+        sql_executado=["SELECT 1"],
+        relatorio="r",
+        artefatos={},
+    )
+    t1 = "11111111-1111-1111-1111-111111111111"
+    t2 = "22222222-2222-2222-2222-222222222222"
+    await gravar_run(
+        engine,
+        RegistroRun(
+            id=str(uuid.uuid4()), pergunta="p1", fontes=["minio://a.md"], thread_id=t1, **base
+        ),
+        tabela=tabela,
+    )
+    await gravar_run(
+        engine,
+        RegistroRun(
+            id=str(uuid.uuid4()), pergunta="p2", fontes=["minio://b.md"], thread_id=t1, **base
+        ),
+        tabela=tabela,
+    )
+    await gravar_run(
+        engine,
+        RegistroRun(
+            id=str(uuid.uuid4()), pergunta="p3", fontes=["minio://c.md"], thread_id=t2, **base
+        ),
+        tabela=tabela,
+    )
+
+    fontes = await fontes_recomendadas_da_thread(engine, t1, tabela=tabela)
+    assert fontes == {"minio://a.md", "minio://b.md"}  # thread 2 não vaza
