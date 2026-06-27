@@ -1,0 +1,3395 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Harness · Apresentação</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --ink: #0c0e13;
+      --ink2: #12151d;
+      --panel: #171b25;
+      --line: #272d3a;
+      --txt: #eceef3;
+      --mut: #929aab;
+      --amber: #ffb01f;
+      --amber-d: #d98a00;
+      --cyan: #5ed7e8;
+      --teal: #74e0bd;
+      --red: #ff6b6b;
+      --grid: rgba(255, 255, 255, .035);
+      --display: "Bricolage Grotesque", serif;
+      --body: "Hanken Grotesk", sans-serif;
+      --mono: "JetBrains Mono", monospace;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
+    }
+
+    html,
+    body {
+      height: 100%;
+      overflow: hidden
+    }
+
+    body {
+      background: var(--ink);
+      color: var(--txt);
+      font-family: var(--body);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* blueprint grid background */
+    .bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(ellipse 90% 80% at 50% 40%, #000 35%, transparent 100%);
+    }
+
+    .bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 60% 50% at 70% 0%, rgba(255, 176, 31, .07), transparent 60%),
+        radial-gradient(ellipse 50% 50% at 0% 100%, rgba(94, 215, 232, .06), transparent 55%);
+    }
+
+    /* ---------- deck ---------- */
+    .deck {
+      position: relative;
+      z-index: 1;
+      height: 100vh;
+      width: 100vw
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      padding: clamp(28px, 4.2vw, 72px) clamp(34px, 6vw, 110px) 84px;
+      opacity: 0;
+    }
+
+    .slide.active {
+      display: flex;
+      opacity: 1
+    }
+
+    .slide.active .reveal {
+      animation: rise .6s cubic-bezier(.2, .7, .2, 1) both
+    }
+
+    .slide.active .reveal:nth-child(2) {
+      animation-delay: .07s
+    }
+
+    .slide.active .reveal:nth-child(3) {
+      animation-delay: .14s
+    }
+
+    .slide.active .reveal:nth-child(4) {
+      animation-delay: .21s
+    }
+
+    .slide.active .reveal:nth-child(5) {
+      animation-delay: .28s
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(18px)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    /* header */
+    .shead {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: clamp(14px, 2.4vw, 30px);
+      flex: 0 0 auto
+    }
+
+    .kick {
+      font-family: var(--mono);
+      font-size: 13px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--amber);
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    .kick::before {
+      content: "";
+      width: 22px;
+      height: 2px;
+      background: var(--amber)
+    }
+
+    .brand {
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: .14em;
+      color: var(--mut);
+      text-transform: uppercase
+    }
+
+    .sbody {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 0
+    }
+
+    h1 {
+      font-family: var(--display);
+      font-weight: 800;
+      line-height: 1.0;
+      letter-spacing: -.02em
+    }
+
+    h2 {
+      font-family: var(--display);
+      font-weight: 700;
+      line-height: 1.04;
+      letter-spacing: -.015em;
+      font-size: clamp(30px, 4.6vw, 62px)
+    }
+
+    .lead {
+      font-size: clamp(17px, 1.8vw, 24px);
+      color: var(--mut);
+      max-width: 60ch;
+      line-height: 1.5;
+      font-weight: 400
+    }
+
+    strong,
+    b {
+      color: var(--txt);
+      font-weight: 700
+    }
+
+    .amber {
+      color: var(--amber)
+    }
+
+    .cyan {
+      color: var(--cyan)
+    }
+
+    .teal {
+      color: var(--teal)
+    }
+
+    .mono {
+      font-family: var(--mono)
+    }
+
+    /* cover */
+    .cover h1 {
+      font-size: clamp(42px, 8vw, 118px)
+    }
+
+    .cover .tag {
+      font-size: clamp(15px, 1.6vw, 21px);
+      color: var(--mut);
+      max-width: 54ch;
+      margin-top: 22px;
+      line-height: 1.55
+    }
+
+    .guide {
+      margin-top: 30px;
+      border-left: 3px solid var(--amber);
+      padding: 14px 0 14px 22px;
+      font-family: var(--display);
+      font-weight: 600;
+      font-size: clamp(18px, 2.1vw, 27px);
+      line-height: 1.3;
+      max-width: 34ch
+    }
+
+    .guide span {
+      color: var(--amber)
+    }
+
+    .cover-grid {
+      display: grid;
+      grid-template-columns: 1.15fr .95fr;
+      gap: 40px;
+      align-items: center;
+      height: 100%
+    }
+
+    /* equation */
+    .eq {
+      font-family: var(--display);
+      font-weight: 800;
+      letter-spacing: -.02em;
+      line-height: 1;
+      font-size: clamp(34px, 6vw, 92px);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: .22em
+    }
+
+    .eq .op {
+      color: var(--amber)
+    }
+
+    .eq .m {
+      color: var(--cyan)
+    }
+
+    .eq .h {
+      color: var(--amber)
+    }
+
+    /* generic columns */
+    .cols {
+      display: grid;
+      gap: clamp(16px, 2vw, 30px)
+    }
+
+    .c2 {
+      grid-template-columns: 1fr 1fr
+    }
+
+    .c3 {
+      grid-template-columns: repeat(3, 1fr)
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: clamp(26px, 3.5vw, 56px);
+      align-items: center;
+      height: 100%
+    }
+
+    .split.wide-svg {
+      grid-template-columns: .9fr 1.1fr
+    }
+
+    /* cards */
+    .card {
+      background: linear-gradient(180deg, var(--panel), var(--ink2));
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: clamp(16px, 1.6vw, 24px);
+      position: relative;
+      overflow: hidden
+    }
+
+    .card .tt {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: clamp(17px, 1.6vw, 22px);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    .card p {
+      color: var(--mut);
+      font-size: clamp(13.5px, 1.05vw, 16px);
+      line-height: 1.5
+    }
+
+    .card .n {
+      position: absolute;
+      top: 10px;
+      right: 14px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--line)
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex: 0 0 auto
+    }
+
+    .dot.a {
+      background: var(--amber)
+    }
+
+    .dot.c {
+      background: var(--cyan)
+    }
+
+    .dot.t {
+      background: var(--teal)
+    }
+
+    .dot.r {
+      background: var(--red)
+    }
+
+    /* quote */
+    .bigquote {
+      font-family: var(--display);
+      font-weight: 600;
+      font-size: clamp(18px, 2vw, 28px);
+      line-height: 1.3
+    }
+
+    .bigquote .src {
+      display: block;
+      margin-top: 14px;
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--amber);
+      letter-spacing: .04em;
+      font-weight: 400
+    }
+
+    /* failure vignettes */
+    .vig {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      background: var(--ink2);
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--red);
+      border-radius: 12px;
+      padding: 18px 20px
+    }
+
+    .vig .ico {
+      font-family: var(--mono);
+      color: var(--red);
+      font-size: 22px;
+      font-weight: 700;
+      flex: 0 0 auto
+    }
+
+    .vig .tt {
+      font-weight: 700;
+      font-size: clamp(15px, 1.3vw, 19px)
+    }
+
+    .vig p {
+      color: var(--mut);
+      font-size: 14.5px;
+      margin-top: 4px;
+      line-height: 1.45
+    }
+
+    /* timeline */
+    .tl {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      position: relative;
+      margin-top: 10px
+    }
+
+    .tl .step {
+      padding: 22px 22px 22px 26px;
+      border-left: 2px solid var(--line);
+      position: relative
+    }
+
+    .tl .step:first-child {
+      border-left: 2px solid var(--amber)
+    }
+
+    .tl .step .badge {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--mut);
+      letter-spacing: .1em
+    }
+
+    .tl .step .h {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: clamp(18px, 1.7vw, 25px);
+      margin: 8px 0 8px
+    }
+
+    .tl .step ul {
+      list-style: none;
+      color: var(--mut);
+      font-size: 13.5px;
+      line-height: 1.8
+    }
+
+    .tl .step li::before {
+      content: "›";
+      color: var(--amber);
+      margin-right: 8px
+    }
+
+    .tl .step .mk {
+      position: absolute;
+      left: -9px;
+      top: 22px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--ink);
+      border: 3px solid var(--amber)
+    }
+
+    .tl .step:nth-child(2) .mk {
+      border-color: var(--cyan)
+    }
+
+    .tl .step:nth-child(3) .mk {
+      border-color: var(--teal)
+    }
+
+    .tlcap {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--cyan);
+      margin-top: 20px;
+      letter-spacing: .04em
+    }
+
+    /* ---------- interactive timeline (date axis) ---------- */
+    .timeline {
+      margin: 20px 0 16px;
+      position: relative
+    }
+
+    .tl-inner {
+      position: relative;
+      margin: 0 38px;
+      height: 116px
+    }
+
+    .tl-inner .axis {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50px;
+      height: 2px;
+      background: var(--line);
+      border-radius: 2px
+    }
+
+    .tl-inner .axis-prog {
+      position: absolute;
+      left: 0;
+      top: 50px;
+      height: 2px;
+      width: 0;
+      border-radius: 2px;
+      background: linear-gradient(90deg, var(--cyan), var(--teal), var(--amber));
+      transition: width .5s cubic-bezier(.2, .7, .2, 1)
+    }
+
+    .marker {
+      all: unset;
+      cursor: pointer;
+      position: absolute;
+      top: -5px;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      z-index: 2
+    }
+
+    .marker .term {
+      height: 20px;
+      line-height: 20px;
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: clamp(12px, 1.2vw, 16px);
+      color: var(--mut);
+      white-space: nowrap;
+      transition: .2s
+    }
+
+    .marker .term.c {
+      color: var(--cyan)
+    }
+
+    .marker .term.t {
+      color: var(--teal)
+    }
+
+    .marker .term.a {
+      color: var(--amber)
+    }
+
+    .marker .mdate {
+      height: 14px;
+      line-height: 14px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--mut);
+      white-space: nowrap;
+      transition: .2s
+    }
+
+    .marker .dotwrap {
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center
+    }
+
+    .marker .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--ink);
+      border: 2px solid var(--line);
+      transition: .2s
+    }
+
+    .marker .dot.major {
+      width: 17px;
+      height: 17px;
+      border-width: 3px
+    }
+
+    .marker .dot.c {
+      border-color: var(--cyan)
+    }
+
+    .marker .dot.t {
+      border-color: var(--teal)
+    }
+
+    .marker .dot.a {
+      border-color: var(--amber)
+    }
+
+    .marker:hover .dot {
+      transform: scale(1.28)
+    }
+
+    .marker.sel .dot {
+      box-shadow: 0 0 0 6px rgba(255, 255, 255, .06)
+    }
+
+    .marker.sel .mdate {
+      color: var(--txt)
+    }
+
+    .marker.sel .term {
+      transform: translateY(-2px)
+    }
+
+    .ytick {
+      position: absolute;
+      top: 50px;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      pointer-events: none
+    }
+
+    .ytick i {
+      width: 1px;
+      height: 13px;
+      background: var(--line)
+    }
+
+    .ytick span {
+      margin-top: 8px;
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--mut);
+      letter-spacing: .05em
+    }
+
+    .era-detail {
+      margin-top: 4px;
+      min-height: 108px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: linear-gradient(180deg, var(--panel), var(--ink2));
+      padding: 18px 22px;
+      transition: border-color .3s
+    }
+
+    .era-detail .et {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: clamp(17px, 1.7vw, 23px);
+      display: flex;
+      align-items: center;
+      gap: 11px
+    }
+
+    .era-detail .ddot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      flex: 0 0 auto
+    }
+
+    .era-detail .ed {
+      color: var(--mut);
+      font-size: clamp(13.5px, 1.15vw, 16.5px);
+      line-height: 1.55;
+      margin-top: 9px;
+      max-width: 88ch
+    }
+
+    .era-detail .ed b {
+      color: var(--txt)
+    }
+
+    .era-detail .tag {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--amber);
+      letter-spacing: .05em;
+      margin-top: 10px
+    }
+
+    /* comparison table */
+    table.cmp td:last-child,
+    table.cmp th:last-child {
+      background: rgba(255, 176, 31, .055)
+    }
+
+    table.cmp th,
+    table.cmp td {
+      font-size: clamp(12px, 1vw, 15px)
+    }
+
+    /* ---------- practical: repo explorer + skills tabs ---------- */
+    .fitem {
+      all: unset;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      font-family: var(--mono);
+      font-size: clamp(12.5px, 1.05vw, 15px);
+      transition: .15s;
+      color: var(--txt)
+    }
+
+    .fitem:hover {
+      background: var(--ink2)
+    }
+
+    .fitem.on {
+      background: var(--ink2);
+      border-color: var(--amber)
+    }
+
+    .fitem .fi {
+      color: var(--amber)
+    }
+
+    .fitem .fmut {
+      color: var(--mut);
+      font-size: 12px
+    }
+
+    .ft {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: clamp(18px, 1.8vw, 24px);
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    .fd {
+      color: var(--mut);
+      font-size: clamp(13.5px, 1.1vw, 16px);
+      line-height: 1.55
+    }
+
+    .fdetail,
+    .tabpanel {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: linear-gradient(180deg, var(--panel), var(--ink2))
+    }
+
+    .fdetail {
+      padding: 20px 24px;
+      min-height: 248px;
+      transition: border-color .3s;
+      align-self: stretch
+    }
+
+    .fdetail .fd {
+      margin-top: 10px
+    }
+
+    .fdetail .docref {
+      margin-top: 14px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--mut);
+      display: flex;
+      align-items: center;
+      gap: 7px
+    }
+
+    .fdetail .docref::before {
+      content: "doc";
+      color: var(--cyan);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 9.5px;
+      letter-spacing: .08em
+    }
+
+    .fdetail .docref a {
+      color: var(--cyan);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: .15s
+    }
+
+    .fdetail .docref a:hover {
+      border-bottom-color: var(--cyan)
+    }
+
+    .tabpanel {
+      padding: 22px 26px;
+      min-height: 300px
+    }
+
+    .fdetail pre,
+    .tabpanel pre {
+      background: #0a0c11;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-family: var(--mono);
+      font-size: clamp(11.5px, .95vw, 13.5px);
+      line-height: 1.7;
+      color: #cdd3df;
+      overflow: auto;
+      white-space: pre;
+      margin-top: 14px
+    }
+
+    .tabpanel pre {
+      margin-top: 0
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap
+    }
+
+    .tab {
+      all: unset;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      letter-spacing: .03em;
+      padding: 8px 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--mut);
+      transition: .15s
+    }
+
+    .tab:hover {
+      border-color: var(--amber);
+      color: var(--amber)
+    }
+
+    .tab.on {
+      background: var(--amber);
+      border-color: var(--amber);
+      color: #0c0e13;
+      font-weight: 700
+    }
+
+    /* ---------- bridges (slide "O que o harness faz" · caixinhas interativas) ---------- */
+    #bridgeList {
+      display: flex;
+      flex-direction: column;
+      gap: 6px
+    }
+
+    .bitem {
+      all: unset;
+      cursor: pointer;
+      display: block;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--ink2);
+      transition: .15s
+    }
+
+    .bitem:hover {
+      border-color: var(--amber)
+    }
+
+    .bitem.on {
+      border-color: var(--amber);
+      background: linear-gradient(90deg, rgba(255, 176, 31, .09), transparent)
+    }
+
+    .bitem .bp {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: clamp(13px, 1.15vw, 17px);
+      color: var(--cyan);
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      line-height: 1.2
+    }
+
+    .bitem.on .bp {
+      color: var(--amber)
+    }
+
+    .bitem .bp .ar {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--amber);
+      flex: 0 0 auto
+    }
+
+    .bitem .bh {
+      font-size: clamp(11.5px, .95vw, 13.5px);
+      color: var(--mut);
+      margin-top: 3px;
+      padding-left: 21px;
+      line-height: 1.3
+    }
+
+    /* ---------- Parte 2 · estilos importados de agent.html ---------- */
+    .kick.p2 {
+      color: var(--cyan)
+    }
+
+    .kick.p2::before {
+      background: var(--cyan)
+    }
+
+    .red {
+      color: var(--red)
+    }
+
+    .partbig {
+      font-family: var(--mono);
+      font-size: 13px;
+      letter-spacing: .3em;
+      color: var(--cyan);
+      text-transform: uppercase
+    }
+
+    .divider-grid {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 48px;
+      align-items: center;
+      height: 100%
+    }
+
+    .callout.cy {
+      background: linear-gradient(90deg, rgba(94, 215, 232, .1), transparent);
+      border-left-color: var(--cyan)
+    }
+
+    .card p+p {
+      margin-top: 10px
+    }
+
+    .fd b {
+      color: var(--txt)
+    }
+
+    /* table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: clamp(12.5px, 1.05vw, 15.5px)
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top
+    }
+
+    th {
+      font-family: var(--mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--amber)
+    }
+
+    td:first-child {
+      font-weight: 700;
+      color: var(--txt);
+      font-family: var(--display)
+    }
+
+    tr td {
+      color: var(--mut)
+    }
+
+    .thead-row th:first-child {
+      color: var(--mut)
+    }
+
+    /* pills / chips */
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px
+    }
+
+    .chip {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      padding: 7px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--mut);
+      background: var(--ink2)
+    }
+
+    .chip.a {
+      border-color: rgba(255, 176, 31, .4);
+      color: var(--amber)
+    }
+
+    .chip.c {
+      border-color: rgba(94, 215, 232, .35);
+      color: var(--cyan)
+    }
+
+    .chip.t {
+      border-color: rgba(116, 224, 189, .35);
+      color: var(--teal)
+    }
+
+    /* big stat */
+    .statline {
+      display: flex;
+      gap: clamp(20px, 3vw, 52px);
+      flex-wrap: wrap;
+      margin-top: 8px
+    }
+
+    .stat .v {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: clamp(34px, 4.6vw, 64px);
+      line-height: 1;
+      letter-spacing: -.02em
+    }
+
+    .stat .l {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      color: var(--mut);
+      margin-top: 8px;
+      letter-spacing: .05em
+    }
+
+    /* list big */
+    .blist {
+      list-style: none
+    }
+
+    .blist li {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: clamp(14.5px, 1.2vw, 18px)
+    }
+
+    .blist li:last-child {
+      border-bottom: none
+    }
+
+    .blist .k {
+      font-family: var(--mono);
+      color: var(--amber);
+      font-size: 13px;
+      flex: 0 0 auto;
+      width: 26px;
+      padding-top: 3px
+    }
+
+    .blist .d {
+      color: var(--mut);
+      font-size: 14px
+    }
+
+    .blist a {
+      color: var(--cyan);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: .15s
+    }
+
+    .blist a:hover {
+      border-bottom-color: var(--cyan)
+    }
+
+    /* callout */
+    .callout {
+      background: linear-gradient(90deg, rgba(255, 176, 31, .1), transparent);
+      border-left: 3px solid var(--amber);
+      padding: 16px 22px;
+      border-radius: 0 12px 12px 0;
+      font-family: var(--display);
+      font-weight: 600;
+      font-size: clamp(16px, 1.6vw, 23px);
+      line-height: 1.35
+    }
+
+    .subtle {
+      color: var(--mut);
+      font-size: 14px;
+      font-family: var(--body);
+      font-weight: 400;
+      margin-top: 6px;
+      line-height: 1.5
+    }
+
+    /* svg wrap */
+    .svgwrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%
+    }
+
+    svg {
+      width: 100%;
+      height: auto;
+      max-height: 64vh;
+      overflow: visible
+    }
+
+    .slbl {
+      font-family: var(--mono);
+      font-size: 11px;
+      fill: var(--mut);
+      letter-spacing: .04em
+    }
+
+    .slbl.a {
+      fill: var(--amber)
+    }
+
+    .slbl.c {
+      fill: var(--cyan)
+    }
+
+    .slbl.t {
+      fill: var(--teal)
+    }
+
+    .sttl {
+      font-family: var(--display);
+      font-weight: 700;
+      fill: var(--txt)
+    }
+
+    /* ---------- real images ---------- */
+    .shot {
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: #f3f0e9;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, .5);
+      display: flex;
+      align-items: center;
+      justify-content: center
+    }
+
+    .shot img {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 68vh;
+      object-fit: contain
+    }
+
+    .figframe {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+      align-items: stretch
+    }
+
+    .figcap {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--mut);
+      letter-spacing: .03em;
+      display: flex;
+      gap: 8px;
+      align-items: center
+    }
+
+    .figcap::before {
+      content: "";
+      width: 14px;
+      height: 2px;
+      background: var(--amber);
+      flex: 0 0 auto
+    }
+
+    .hero-shot img {
+      max-height: 72vh
+    }
+
+    .center-fig {
+      align-items: center
+    }
+
+    .center-fig .shot {
+      width: auto;
+      max-width: min(900px, 86vw)
+    }
+
+    .center-fig .shot img {
+      max-height: 58vh;
+      width: auto;
+      max-width: 100%
+    }
+
+    /* ---------- chrome ---------- */
+    .foot {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 5;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 0 clamp(20px, 4vw, 40px);
+      background: linear-gradient(180deg, transparent, var(--ink) 60%)
+    }
+
+    .prog {
+      flex: 1;
+      height: 3px;
+      background: var(--line);
+      border-radius: 2px;
+      overflow: hidden
+    }
+
+    .prog .fill {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, var(--amber-d), var(--amber));
+      transition: width .35s ease
+    }
+
+    .count {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--mut);
+      min-width: 54px;
+      text-align: right
+    }
+
+    .nav {
+      display: flex;
+      gap: 8px
+    }
+
+    .nav button,
+    .iconbtn {
+      font-family: var(--mono);
+      font-size: 12px;
+      background: var(--ink2);
+      border: 1px solid var(--line);
+      color: var(--txt);
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: .15s
+    }
+
+    .nav button:hover,
+    .iconbtn:hover {
+      border-color: var(--amber);
+      color: var(--amber)
+    }
+
+    /* notes drawer */
+    .notes {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 20;
+      background: #0a0c11;
+      border-top: 2px solid var(--amber);
+      transform: translateY(100%);
+      transition: transform .35s cubic-bezier(.2, .7, .2, 1);
+      max-height: 46vh;
+      overflow: auto;
+      padding: 22px clamp(24px, 5vw, 70px) 30px
+    }
+
+    .notes.open {
+      transform: translateY(0)
+    }
+
+    .notes .nh {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--amber);
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between
+    }
+
+    .notes .nbody {
+      font-size: 15.5px;
+      line-height: 1.65;
+      color: #d7dbe4;
+      max-width: 88ch
+    }
+
+    .notes .nbody b {
+      color: #fff
+    }
+
+    .notes .nbody .tip {
+      color: var(--mut);
+      font-size: 13.5px;
+      font-family: var(--mono)
+    }
+
+    .notes ul {
+      margin: 8px 0 0 18px
+    }
+
+    .notes li {
+      margin: 4px 0
+    }
+
+    /* overview */
+    .ov {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      background: rgba(8, 9, 13, .97);
+      display: none;
+      padding: clamp(30px, 5vw, 60px);
+      overflow: auto
+    }
+
+    .ov.open {
+      display: block
+    }
+
+    .ov h3 {
+      font-family: var(--mono);
+      color: var(--amber);
+      font-size: 13px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      margin-bottom: 24px
+    }
+
+    .ovgrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px
+    }
+
+    .ovcard {
+      background: var(--ink2);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px 18px;
+      cursor: pointer;
+      transition: .15s;
+      min-height: 96px
+    }
+
+    .ovcard:hover {
+      border-color: var(--amber);
+      transform: translateY(-3px)
+    }
+
+    .ovcard .on {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--amber)
+    }
+
+    .ovcard .ot {
+      font-family: var(--display);
+      font-weight: 600;
+      font-size: 15px;
+      margin-top: 8px;
+      line-height: 1.25
+    }
+
+    /* ---------- right-side slide indicator ---------- */
+    .dots {
+      position: fixed;
+      right: clamp(14px, 1.8vw, 30px);
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 6;
+      display: flex;
+      flex-direction: column;
+      gap: clamp(7px, 1vh, 12px);
+      align-items: flex-end
+    }
+
+    .dots button {
+      all: unset;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: flex-end
+    }
+
+    .dots .d {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      border: 1.5px solid var(--line);
+      background: transparent;
+      transition: .22s ease;
+      flex: 0 0 auto
+    }
+
+    .dots button:hover .d {
+      border-color: var(--amber)
+    }
+
+    .dots button.on .d {
+      background: var(--amber);
+      border-color: var(--amber);
+      box-shadow: 0 0 0 4px rgba(255, 176, 31, .16)
+    }
+
+    .dots .lbl {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: .03em;
+      color: var(--mut);
+      white-space: nowrap;
+      max-width: 0;
+      overflow: hidden;
+      opacity: 0;
+      transform: translateX(6px);
+      transition: .22s ease
+    }
+
+    .dots button:hover .lbl {
+      opacity: 1;
+      transform: none;
+      max-width: 260px
+    }
+
+    .dots button.on .lbl {
+      opacity: 1;
+      transform: none;
+      max-width: 260px;
+      color: var(--amber)
+    }
+
+    /* scroll/drag hint */
+    .scrollhint {
+      position: fixed;
+      left: 50%;
+      bottom: 26px;
+      transform: translateX(-50%);
+      z-index: 5;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--mut);
+      letter-spacing: .05em;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      opacity: .75;
+      pointer-events: none;
+      animation: bob 2.4s ease-in-out infinite
+    }
+
+    .scrollhint .arrow {
+      font-size: 13px;
+      color: var(--amber)
+    }
+
+    @keyframes bob {
+
+      0%,
+      100% {
+        transform: translateX(-50%) translateY(0)
+      }
+
+      50% {
+        transform: translateX(-50%) translateY(4px)
+      }
+    }
+
+    /* ---------- ciclo de vida do projeto (slide Ciclo de vida) ---------- */
+    #lcGrid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 14px;
+      align-items: start;
+      margin-top: 20px
+    }
+
+    .lclane {
+      display: flex;
+      flex-direction: column;
+      gap: 8px
+    }
+
+    .lchead {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      color: var(--mut);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      line-height: 1.3;
+      min-height: 28px
+    }
+
+    .lchead .pdot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex: 0 0 auto
+    }
+
+    .lcbox {
+      all: unset;
+      cursor: pointer;
+      display: block;
+      background: var(--ink2);
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--line);
+      border-radius: 9px;
+      padding: 9px 12px;
+      transition: .15s
+    }
+
+    .lcbox:hover {
+      border-color: var(--amber);
+      transform: translateY(-2px)
+    }
+
+    .lcbox .bn {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: clamp(12.5px, 1.05vw, 15px);
+      color: var(--txt)
+    }
+
+    .lcbox .bs {
+      color: var(--mut);
+      font-size: 11px;
+      margin-top: 2px;
+      line-height: 1.3
+    }
+
+    .lcgate {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--mut);
+      margin-top: 2px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      opacity: .9
+    }
+
+    .lcgate::before {
+      content: "\25C7";
+      font-size: 9px
+    }
+
+    /* modal de explicação */
+    .lcmodal {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      background: rgba(8, 9, 13, .82);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px
+    }
+
+    .lcmodal.open {
+      display: flex
+    }
+
+    .lcmodal .box {
+      position: relative;
+      background: linear-gradient(180deg, var(--panel), var(--ink2));
+      border: 1px solid var(--line);
+      border-top: 3px solid var(--amber);
+      border-radius: 16px;
+      max-width: 560px;
+      width: 100%;
+      padding: 26px 30px 30px;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, .6);
+      animation: rise .3s cubic-bezier(.2, .7, .2, 1) both
+    }
+
+    .lcmodal .mx {
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      color: var(--mut);
+      font-family: var(--mono);
+      font-size: 18px;
+      line-height: 1;
+      transition: .15s
+    }
+
+    .lcmodal .mx:hover {
+      color: var(--amber)
+    }
+
+    .lcmodal .mph {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--mut)
+    }
+
+    .lcmodal .mh {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: clamp(22px, 2.6vw, 34px);
+      line-height: 1.05;
+      letter-spacing: -.01em;
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 12px
+    }
+
+    .lcmodal .mh .hdot {
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      flex: 0 0 auto
+    }
+
+    .lcmodal .ml {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--amber);
+      margin: 18px 0 6px
+    }
+
+    .lcmodal .mt {
+      font-size: clamp(14px, 1.2vw, 16.5px);
+      line-height: 1.55;
+      color: var(--txt)
+    }
+
+    .lcmodal .mt b {
+      color: #fff
+    }
+
+    @media (max-width:880px) {
+
+      .cover-grid,
+      .split,
+      .divider-grid {
+        grid-template-columns: 1fr
+      }
+
+      .c2,
+      .c3,
+      .tl {
+        grid-template-columns: 1fr
+      }
+
+      .cover-grid .figframe,
+      .divider-grid .svgwrap {
+        display: none
+      }
+
+      #lcGrid {
+        grid-template-columns: 1fr 1fr
+      }
+
+      .dots .lbl {
+        display: none
+      }
+
+      .dots {
+        gap: 8px
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bg"></div>
+
+  <div class="deck" id="deck">
+
+    <!-- 0 PERFIL (capa do palestrante) -->
+    <section class="slide cover" data-part="Quem fala">
+      <div class="shead reveal"><span class="kick">Engenharia de IA · 2026</span><span class="brand">Workshop · Agent
+          Harness</span></div>
+      <div class="cover-grid">
+        <div>
+          <div class="reveal"
+            style="font-family:var(--mono);font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--cyan)">
+            Product Owner &amp; AI Engineer</div>
+          <h1 class="reveal" style="font-size:clamp(36px,6vw,86px);margin-top:10px">Caio<br><span
+              class="amber">Machado de Oliveira</span></h1>
+          <p class="tag reveal" style="margin-top:16px">Transformo conhecimento organizacional e desafios operacionais em
+            <b>produtos de IA</b> aplicáveis ao mundo real — busca documental, análise assistida, automação inteligente e
+            apoio à decisão.
+          </p>
+          <div class="statline reveal" style="margin-top:22px">
+            <div class="stat">
+              <div class="v amber">50+</div>
+              <div class="l">horas de conteúdo autoral<br>sobre IA aplicada a software</div>
+            </div>
+            <div class="stat">
+              <div class="v cyan">500k+</div>
+              <div class="l">documentos institucionais<br>no assistente do TCEMG</div>
+            </div>
+          </div>
+          <ul class="blist reveal" style="margin-top:22px;font-size:clamp(13px,1.1vw,16px)">
+            <li><span class="k" style="width:auto;min-width:34px;color:var(--cyan)">'25</span>
+              <div><b>Product Owner &amp; AI Engineer</b> · TCEMG
+                <div class="d">sistema agêntico sobre 500k+ documentos · workflows de análise de auditoria · capacitação
+                  de servidores</div>
+              </div>
+            </li>
+            <li><span class="k" style="width:auto;min-width:34px;color:var(--teal)">'25</span>
+              <div><b>Professor de Engenharia de IA</b> · Jornada de Dados
+                <div class="d">LLMs · RAG · engenharia de prompt e contexto · bancos vetoriais · agentes</div>
+              </div>
+            </li>
+          </ul>
+          <div class="chips reveal" style="margin-top:16px">
+            <span class="chip c">moliveiracaio@gmail.com</span>
+            <span class="chip c">+55 38 99938-0880</span>
+            <span class="chip a">linkedin.com/in/caiomoliveira</span>
+            <span class="chip a">github.com/caio-moliveira</span>
+          </div>
+        </div>
+        <div class="figframe reveal">
+          <div class="shot hero-shot" style="background:var(--ink2)"><img src="minha-foto.jpg" alt="Caio Oliveira"></div>
+          <div class="figcap">Montes Claros · MG · Brasil</div>
+        </div>
+      </div>
+      <div class="notes-src" hidden>
+        <b>Abertura · quem fala.</b> Product Owner e Engenheiro de IA: visão de produto + arquitetura de soluções +
+        desenvolvimento prático. No TCEMG, assistente conversacional com recuperação sobre 500k+ documentos
+        institucionais e workflows de IA para análise preliminar de auditoria; também ministra capacitações para
+        servidores e treinamentos técnicos. Na Jornada de Dados, professor de Engenharia de IA com 50+ horas de conteúdo
+        autoral (LLMs, RAG, prompt/context engineering, bancos vetoriais, agentes). Experiência em setor público:
+        produtos de IA, auditoria, governança e capacitação.
+      </div>
+    </section>
+
+    <!-- 1 COVER -->
+    <section class="slide cover" data-part="Abertura">
+      <div class="shead reveal"><span class="kick">Engenharia de IA · 2026</span><span class="brand">Caio
+          Oliveira</span></div>
+      <div class="cover-grid">
+        <div>
+          <h1 class="reveal">Agent<br><span class="amber">Harness</span></h1>
+          <p class="tag reveal">O sistema ao redor do modelo (contexto, memória, ferramentas, execução e validação)
+            que transforma um modelo num agente que entrega.</p>
+          <div class="guide reveal">O modelo <span>pensa</span>.<br>O harness faz o trabalho <span>continuar</span>.
+          </div>
+        </div>
+        <div class="figframe reveal">
+          <div class="shot hero-shot"><img src="working-backwards.png"
+              alt="Cada recurso do harness é uma ponte sobre algo que o modelo não faz sozinho"></div>
+          <div class="figcap">cada peça do harness é uma ponte sobre algo que o modelo não faz sozinho</div>
+        </div>
+      </div>
+      <div class="notes-src" hidden>
+        <b>Abertura.</b> A revolução atual em agentes não está só em modelos mais inteligentes, mas na engenharia do
+        sistema ao redor do modelo. Leia a frase-guia: "o modelo pensa; o harness faz o trabalho continuar".
+        <span class="tip">→ / Espaço ou rolar/arrastar avança · ← volta · S notas · O grade · F tela cheia</span>
+      </div>
+    </section>
+
+    <!-- 1b DORA · IA é amplificador -->
+    <section class="slide" data-part="IA é amplificador">
+      <div class="shead reveal"><span class="kick">Estudo DORA · DevOps Research &amp; Assessment</span></div>
+      <div class="split">
+        <div>
+          <h2 class="reveal">A IA é um<br><span class="amber">amplificador</span>.</h2>
+          <p class="lead reveal" style="margin-top:14px;max-width:54ch">Ela amplifia as <b>forças</b> de organizações de
+            alta performance, e as <b class="red">disfunções</b> das que sofrem. A ferramenta não conserta o processo;
+            ela acelera o que já existe.</p>
+          <div class="cols c2 reveal" style="margin-top:20px;gap:16px;align-items:stretch">
+            <div class="card" style="border-left:3px solid var(--teal)">
+              <div class="tt" style="font-size:16px"><span class="dot t"></span>Base sólida</div>
+              <p>Plataforma interna de qualidade, <b>APIs fortes</b>, workflows claros e <b>testes robustos</b> → a IA
+                vira uma <b class="teal">colaboradora poderosa</b>.</p>
+            </div>
+            <div class="card" style="border-left:3px solid var(--red)">
+              <div class="tt" style="font-size:16px"><span class="dot r"></span>Base frágil</div>
+              <p>Tooling fragmentado, <b>dados em silos</b> e infra frágil → a IA só ajuda a <b class="red">gerar dívida
+                  técnica mais rápido</b>.</p>
+            </div>
+          </div>
+          <div class="callout reveal" style="margin-top:18px;font-size:clamp(14px,1.3vw,18px)">Estruture os processos
+            <b>antes</b> de adotar a ferramenta. O <span class="amber">harness</span> é exatamente essa estrutura.
+          </div>
+        </div>
+        <div class="reveal" style="display:flex;flex-direction:column;justify-content:center;height:100%;gap:16px">
+          <p class="bigquote">"AI's primary role in software development is that of an <span class="amber">amplifier</span>.
+            It magnifies the strengths of high-performing organizations and the dysfunctions of struggling ones. […] if a
+            team suffers from fragmented tooling, siloed data, or fragile infrastructure, AI will simply help them
+            <span class="red">generate technical debt faster</span>."<span class="src">DORA · Balancing the Tensions of
+              AI</span></p>
+          <div class="figcap">fonte: dora.dev/insights/balancing-ai-tensions</div>
+        </div>
+      </div>
+      <div class="notes-src" hidden>
+        <b>Por que estruturar antes de adotar.</b> O estudo da DORA (DevOps Research &amp; Assessment, Google Cloud)
+        sobre o impacto da IA nos times de desenvolvimento: a IA é, antes de tudo, um <b>amplificador</b>. Ela magnifica
+        as forças de organizações de alta performance e as disfunções das que sofrem. Com plataforma interna de
+        qualidade, APIs fortes, workflows claros e boas práticas de teste, a IA atua como colaboradora poderosa. Mas com
+        tooling fragmentado, dados em silos ou infraestrutura frágil, ela "simply help them generate technical debt
+        faster". Gancho para a palestra: o <b>harness</b> é justamente essa estrutura que precede a ferramenta — sem ela,
+        adotar IA só acelera o caos. Fonte: dora.dev/insights/balancing-ai-tensions.
+      </div>
+    </section>
+
+    <!-- 2 EVOLUÇÃO (linha do tempo interativa) -->
+    <section class="slide" data-part="A evolução">
+      <div class="shead reveal"><span class="kick">A evolução · 2022 → 2027</span></div>
+      <div class="sbody">
+        <h2 class="reveal" style="margin-bottom:6px">De <span class="cyan">instruir</span> → <span
+            class="teal">informar</span> → <span class="amber">orquestrar</span></h2>
+        <p class="lead reveal" style="margin-bottom:4px;max-width:72ch">Três disciplinas em cinco anos. Cada uma contém
+          a anterior. <span style="font-size:14px;color:var(--mut)">Clique nos pontos da linha do tempo.</span></p>
+        <div class="timeline reveal" id="tl">
+          <div class="tl-inner">
+            <div class="axis"></div>
+            <div class="axis-prog" id="tlProg"></div>
+            <div class="ytick" style="left:0%"><i></i><span>2022</span></div>
+            <div class="ytick" style="left:16.667%"><i></i><span>2023</span></div>
+            <div class="ytick" style="left:33.333%"><i></i><span>2024</span></div>
+            <div class="ytick" style="left:50%"><i></i><span>2025</span></div>
+            <div class="ytick" style="left:66.667%"><i></i><span>2026</span></div>
+            <div class="ytick" style="left:83.333%"><i></i><span>2027</span></div>
+            <button class="marker" data-i="0" style="left:13.889%" aria-label="Prompt Engineering, nov 2022"><span
+                class="term c">Prompt</span><span class="mdate">nov 2022</span><span class="dotwrap"><i
+                  class="dot major c"></i></span></button>
+            <button class="marker" data-i="1" style="left:23.611%" aria-label="RAG, jun 2023"><span
+                class="term"></span><span class="mdate">jun 2023</span><span class="dotwrap"><i
+                  class="dot"></i></span></button>
+            <button class="marker" data-i="2" style="left:47.222%" aria-label="Janelas gigantes e MCP, nov 2024"><span
+                class="term"></span><span class="mdate">nov 2024</span><span class="dotwrap"><i
+                  class="dot"></i></span></button>
+            <button class="marker" data-i="3" style="left:56.944%" aria-label="Context Engineering, jun 2025"><span
+                class="term t">Context</span><span class="mdate">jun 2025</span><span class="dotwrap"><i
+                  class="dot major t"></i></span></button>
+            <button class="marker" data-i="4" style="left:68.056%" aria-label="Harness Engineering, fev 2026"><span
+                class="term a">Harness</span><span class="mdate">fev 2026</span><span class="dotwrap"><i
+                  class="dot major a"></i></span></button>
+          </div>
+        </div>
+        <div class="era-detail reveal" id="eraDetail"></div>
+      </div>
+      <div class="notes-src" hidden>
+        Linha do tempo interativa. Prompt (2022, como pedir) → Context (2025, o que entra na janela) → Harness (2026,
+        como o agente trabalha). Clique em cada era para detalhar. Cada etapa contém a anterior; janelas maiores
+        ajudaram, mas o contexto continua finito e degradável ("context rot").
+      </div>
+    </section>
+
+    <!-- 3 COMPARAÇÃO (Prompt × Context × Harness) -->
+    <section class="slide" data-part="Comparação">
+      <div class="shead reveal"><span class="kick">Prompt × Context × Harness</span></div>
+      <div class="sbody reveal">
+        <table class="cmp">
+          <tr class="thead-row">
+            <th>Dimensão</th>
+            <th style="color:var(--cyan)">Prompt Engineering</th>
+            <th style="color:var(--teal)">Context Engineering</th>
+            <th style="color:var(--amber)">Harness Engineering</th>
+          </tr>
+          <tr>
+            <td>Escopo</td>
+            <td>Interação única</td>
+            <td>Janela de contexto, ao longo de turnos</td>
+            <td>Sistema inteiro do agente</td>
+          </tr>
+          <tr>
+            <td>O que controla</td>
+            <td>Redação da instrução</td>
+            <td>Seleção, ordenação e compactação de tokens</td>
+            <td>Orquestração de ferramentas, persistência de estado, loops de verificação, recuperação de erros</td>
+          </tr>
+          <tr>
+            <td>Modos de falhas</td>
+            <td>Instruções pouco claras</td>
+            <td>Informação errada ou ausente no contexto</td>
+            <td>Erros do agente, doom loops, drift entre sessões, ações inseguras</td>
+          </tr>
+          <tr>
+            <td>Fronteira temporal</td>
+            <td class="mono">um turno</td>
+            <td class="mono">uma janela de contexto</td>
+            <td class="mono amber">múltiplas janelas · toda a tarefa</td>
+          </tr>
+        </table>
+        <div class="figcap reveal" style="margin-top:16px">fonte: Augment Code · Harness Engineering for AI Coding
+          Agents</div>
+      </div>
+      <div class="notes-src" hidden>
+        Tabela do Augment Code (traduzida). O eixo que mais distingue o harness é a <b>fronteira temporal</b>: ele
+        governa trabalho coerente ao longo de múltiplas janelas e de toda a vida da tarefa, não de um turno nem de uma
+        janela.
+      </div>
+    </section>
+
+    <!-- 4 TESE -->
+    <section class="slide" data-part="A tese">
+      <div class="shead reveal"><span class="kick">A tese</span></div>
+      <div class="split">
+        <div>
+          <div class="eq reveal"><span class="m">Agent</span><span class="op">=</span><span class="m">Model</span><span
+              class="op">+</span><span class="h">Harness</span></div>
+          <p class="lead reveal" style="margin-top:28px">Um modelo cru só transforma texto em texto. Vira agente quando
+            o harness lhe dá <b class="amber">estado</b>, <b class="amber">ferramentas</b>, <b
+              class="amber">execução</b> e <b class="amber">validação</b>.</p>
+          <p class="bigquote reveal" style="margin-top:20px">"If you're not the model, you're the harness."<span
+              class="src">Vivek Trivedy · LangChain</span></p>
+        </div>
+        <div class="figframe reveal">
+          <div class="shot"><img src="o-que-e-harness2.png" alt="O modelo é um chip na placa; o harness é todo o resto">
+          </div>
+          <div class="figcap">o modelo é um chip na placa, e o harness é todo o resto que o torna útil</div>
+        </div>
+      </div>
+      <div class="notes-src" hidden>
+        <b>A equação da LangChain.</b> Modelos, fora da caixa, só transformam texto em texto. Não mantêm estado durável,
+        não executam código, não acessam conhecimento em tempo real. Tudo isso é nível-harness.
+      </div>
+    </section>
+
+    <!-- 4 O QUE O HARNESS FAZ -->
+    <section class="slide" data-part="O que o harness faz">
+      <div class="shead reveal"><span class="kick">O que o harness faz</span></div>
+      <div class="sbody center-fig">
+        <p class="lead reveal" style="margin-bottom:18px;text-align:center;max-width:72ch">Cada recurso deriva de um <b
+            class="amber">comportamento que o modelo não entrega sozinho</b>.</p>
+        <div class="figframe reveal center-fig">
+          <div class="shot"><img src="img-harness-does.jpg"
+              alt="Comportamento desejado do agente vs o que o harness adiciona"></div>
+        </div>
+      </div>
+      <div class="notes-src" hidden>
+        <b>Leia a tabela da esquerda para a direita.</b> Cada linha é um comportamento desejado e a peça de harness que
+        o destrava: dados duráveis → filesystem+git; executar código → bash; conhecimento novo → memory files+web+MCPs;
+        horizonte longo → ralph loops+planning+verification.
+      </div>
+    </section>
+
+    <!-- 7 O QUE O HARNESS FAZ · caixinhas interativas -->
+    <section class="slide" data-part="As pontes do harness">
+      <div class="shead reveal"><span class="kick">O que o harness faz · peça por peça</span></div>
+      <div class="split">
+        <div class="reveal">
+          <h2 style="font-size:clamp(21px,2.7vw,37px);margin-bottom:8px">Comportamento desejado →<br>o que o <span
+              class="amber">harness adiciona</span>.</h2>
+          <p class="lead" style="margin:0 0 14px;font-size:clamp(13.5px,1.15vw,16px);max-width:50ch">Cada linha da
+            imagem é uma <b>ponte</b> sobre algo que o modelo não faz sozinho. <span
+              style="font-size:12.5px;color:var(--mut)">Clique para abrir cada caixa.</span></p>
+          <div id="bridgeList">
+            <button class="bitem" data-i="0">
+              <div class="bp"><span class="ar">▸</span>Filesystem + Git</div>
+              <div class="bh">Trabalhar com dados reais, de forma durável</div>
+            </button>
+            <button class="bitem" data-i="1">
+              <div class="bp"><span class="ar">▸</span>Bash + Code Execution</div>
+              <div class="bh">Escrever e executar código</div>
+            </button>
+            <button class="bitem" data-i="2">
+              <div class="bp"><span class="ar">▸</span>Sandboxed Environments + Tooling</div>
+              <div class="bh">Execução segura + ferramentas prontas</div>
+            </button>
+            <button class="bitem" data-i="3">
+              <div class="bp"><span class="ar">▸</span>Memory Files + Web Search + MCPs</div>
+              <div class="bh">Lembrar e acessar conhecimento novo</div>
+            </button>
+            <button class="bitem" data-i="4">
+              <div class="bp"><span class="ar">▸</span>Compaction + Tool Offloading + Skills</div>
+              <div class="bh">Manter o desempenho em contextos longos</div>
+            </button>
+            <button class="bitem" data-i="5">
+              <div class="bp"><span class="ar">▸</span>Ralph Loops + Planning + Verification</div>
+              <div class="bh">Concluir trabalho de horizonte longo</div>
+            </button>
+          </div>
+        </div>
+        <div class="fdetail reveal" id="bridgeDetail"></div>
+      </div>
+      <div class="notes-src" hidden>
+        <b>Versão interativa da imagem anterior.</b> Abra uma caixa por vez e conecte cada comportamento à peça de
+        harness que o destrava. (1) Dados duráveis → <b>filesystem + git</b>, a primitiva mais fundamental; a memória
+        real é o estado nos arquivos, não a conversa. (2) Executar código → <b>bash</b>, a ferramenta de propósito
+        geral: dê um computador, não uma tool por ação. (3) Execução segura → <b>sandbox + default tooling</b>:
+        perímetro descartável, allow-list, isolamento de rede, teardown; com runtimes/git/browser/tests prontos, o
+        agente se autovalida. (4) Conhecimento novo → <b>memory files + web + MCPs</b>: memory recarregado ao editar
+        (aprendizado contínuo); todo MCP é texto confiável (superfície de ataque). (5) Contextos longos → <b>compaction
+          + offloading + skills</b>: a janela é finita e degrada; o contexto é curado, não despejado. (6) Horizonte
+        longo → <b>ralph loops + planning + verification</b>: o loop roda sozinho e a validação prova, não promete
+        (constraint · feedback · quality gates).
+      </div>
+    </section>
+
+    <!-- 12 RALPH LOOP (dedicado) -->
+    <section class="slide" data-part="Ralph loop">
+      <div class="shead reveal"><span class="kick">O loop · Ralph</span></div>
+      <div class="split">
+        <div>
+          <h2 class="reveal" style="font-size:clamp(24px,3.2vw,42px)">O <span class="amber">Ralph loop</span><br>amarra
+            tudo.</h2>
+          <p class="lead reveal" style="margin-top:10px;max-width:58ch">O loop mais simples que funciona (Geoffrey
+            Huntley). Ele transforma os componentes da anatomia num <b>motor que roda sozinho</b>.</p>
+          <div class="reveal mono"
+            style="margin-top:14px;background:var(--ink2);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--teal);overflow:auto;white-space:nowrap">
+            while true; do cat PROMPT.md | agente; done</div>
+          <ul class="blist reveal" style="margin-top:14px">
+            <li><span class="k">1</span>
+              <div>Lê o objetivo + o estado dos arquivos <span class="d" style="color:var(--amber)">· instrução +
+                  memória</span></div>
+            </li>
+            <li><span class="k">2</span>
+              <div>Faz <b>uma</b> tarefa e age no ambiente <span class="d" style="color:var(--amber)">· execução</span>
+              </div>
+            </li>
+            <li><span class="k">3</span>
+              <div>Valida; a falha vira prompt de correção <span class="d" style="color:var(--amber)">· validação</span>
+              </div>
+            </li>
+            <li><span class="k">4</span>
+              <div>Grava o resultado no filesystem <span class="d" style="color:var(--amber)">· estado</span></div>
+            </li>
+            <li><span class="k">5</span>
+              <div>Um hook reinjeta o prompt em contexto limpo <span class="d">↻ recomeça</span></div>
+            </li>
+          </ul>
+        </div>
+        <div class="reveal" style="display:flex;flex-direction:column;gap:14px;justify-content:center;height:100%">
+          <div class="shot" style="max-width:280px;align-self:center"><img src="ralph-loop.png"
+              alt="Ralph loop: task, agent, filesystem"></div>
+          <div class="callout" style="font-size:clamp(13.5px,1.2vw,17px)">O estado mora nos <span
+              class="amber">arquivos</span>, não na janela. O progresso sobrevive a qualquer reset.</div>
+          <div class="card">
+            <div class="tt" style="font-size:15px"><span class="dot c"></span>Alternativa: multi-agente</div>
+            <p><b>Planner · Generator · Evaluator</b>, papéis separados, para quando a tarefa for grande demais para um
+              loop
+              só. Ralph adverte: não complique cedo demais.</p>
+          </div>
+        </div>
+      </div>
+      <div class="notes-src" hidden>
+        <b>Slide dedicado ao Ralph loop</b> (Geoffrey Huntley): o loop agêntico mais simples possível: <span
+          class="mono">while true; do cat PROMPT.md | agente; done</span>. Mostre como ele <b>usa o harness</b>: a cada
+        volta o agente lê o objetivo e o estado dos <b>arquivos</b> (instrução+memória), executa <b>uma</b> tarefa
+        (execução), valida (a falha vira prompt de correção), grava no filesystem (estado), e um hook reinjeta o prompt
+        em contexto limpo. Como a memória vive nos arquivos e não na janela, o progresso não se perde quando o contexto
+        enche ou reinicia. Monolítico de propósito. Huntley adverte contra multi-agente cedo demais ("agentes
+        não-determinísticos viram um red hot mess"). O engenheiro projeta o loop; o loop faz o trabalho.
+      </div>
+    </section>
+
+    <!-- 13 O ERRO VIRA MEMÓRIA (antes: The ratchet) -->
+    <section class="slide" data-part="O erro vira memória">
+      <div class="shead reveal"><span class="kick">O erro vira memória · o harness não encolhe</span></div>
+      <div class="sbody">
+        <div class="cols c2 reveal" style="gap:clamp(28px,4.5vw,72px);align-items:start">
+
+          <!-- TEMA 1 · a importância do erro -->
+          <div>
+            <div
+              style="font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--red);display:flex;align-items:center;gap:9px">
+              <span style="width:20px;height:2px;background:var(--red)"></span>01 · a importância do erro
+            </div>
+            <h2 style="font-size:clamp(22px,2.7vw,38px);margin-top:14px">Todo erro vira um<br><span class="amber">sinal
+                permanente</span>.</h2>
+            <p class="lead" style="margin-top:14px;font-size:clamp(14px,1.2vw,17px);max-width:46ch">Quando o agente
+              erra,
+              a falha não é um "run ruim" para repetir. Ela é escrita na memória, vira regra, hook, teste ou skill, para
+              que numa tarefa parecida o agente <b class="amber">não repita o erro</b>.</p>
+            <p class="subtle" style="margin-top:18px;color:var(--txt);font-size:clamp(13px,1.05vw,15px)">Um teste
+              comentado é mergeado sem querer. Vira <b>três defesas permanentes</b>:</p>
+            <div class="chips" style="margin-top:10px">
+              <span class="chip a">regra no CLAUDE.md</span><span class="chip a">pre-commit grep</span><span
+                class="chip a">reviewer subagent</span>
+            </div>
+          </div>
+
+          <!-- TEMA 2 · o harness não encolhe, ele se move -->
+          <div>
+            <div
+              style="font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan);display:flex;align-items:center;gap:9px">
+              <span style="width:20px;height:2px;background:var(--cyan)"></span>02 · o harness não encolhe
+            </div>
+            <h2 style="font-size:clamp(22px,2.7vw,38px);margin-top:14px">O harness não encolhe.<br>Ele <span
+                class="cyan">se move</span>.</h2>
+            <p class="lead" style="margin-top:14px;font-size:clamp(14px,1.2vw,17px);max-width:46ch">O harness que você
+              constrói não diminui quando chega um modelo melhor. O espaço de combinações não encolhe: <b
+                class="cyan">ele
+                se move</b> junto com o modelo, para problemas mais difíceis.</p>
+            <p class="subtle" style="margin-top:18px;color:var(--txt);font-size:clamp(13px,1.05vw,15px)">O Opus 4.6
+              resolveu a "ansiedade de contexto" e aquele scaffolding virou dead code. No lugar, o trabalho <b>subiu de
+                nível</b>:</p>
+            <div class="chips" style="margin-top:10px">
+              <span class="chip c">memória de vários dias</span><span class="chip c">3 agentes coordenados</span><span
+                class="chip c">evaluators de UI</span>
+            </div>
+          </div>
+
+        </div>
+        <div class="callout reveal" style="margin-top:clamp(22px,3.2vw,38px);font-size:clamp(14px,1.3vw,18px)">Só
+          adicione
+          uma constraint quando vir uma <b>falha real</b>. Só remova quando um modelo capaz a tornar redundante.</div>
+      </div>
+      <div class="notes-src" hidden>
+        <b>Dois movimentos do mesmo princípio:</b> o harness é moldado ao longo do tempo e nunca é desperdiçado. Fonte:
+        Addy Osmani.
+        <b>01 · A importância do erro:</b> cada falha real é um <b>sinal permanente</b>, não um "run ruim" para repetir.
+        O agente aprende o erro e ele é persistido na memória (regra, hook, teste, skill) para não se repetir numa
+        tarefa
+        parecida. Exemplo de Osmani: um PR com teste comentado é mergeado sem querer; daí (1) o CLAUDE.md passa a dizer
+        "nunca comente testes; apague ou conserte"; (2) o pre-commit hook passa a fazer grep de <span
+          class="mono">.skip(</span> e <span class="mono">xit(</span> no diff; (3) o reviewer subagent passa a marcar
+        teste comentado como bloqueador. Uma falha, três defesas. Princípio dele: "você só adiciona constraints quando
+        viu uma falha real; só remove quando um modelo capaz as tornou redundantes".
+        <b>02 · O harness não encolhe, ele se move:</b> o harness não desaparece com modelos melhores. "The space of
+        interesting harness combinations doesn't shrink. It moves." Exemplo de Osmani: quando o Opus 4.6 resolveu a
+        "ansiedade de contexto", aquele scaffolding virou dead code; no lugar surgem uma política de memória de vários
+        dias, um harness coordenando 3 agentes especializados, ou evaluators de qualidade de design em UIs geradas.
+        Constraints codificam suposições sobre os limites do modelo; quando os limites sobem, novos problemas aparecem e
+        pedem novo scaffolding, não menos. Conclusão: o esforço se <b>realoca para cima</b>, ele não evapora.
+      </div>
+    </section>
+
+    <!-- 16 PARTE 2 · DIVISOR (Na prática) -->
+    <section class="slide" data-part="Na prática">
+      <div class="shead reveal"><span class="kick p2">Parte 2 · Na prática com Claude Code</span></div>
+      <div class="divider-grid">
+        <div>
+          <span class="partbig reveal">Parte 2</span>
+          <h2 class="reveal" style="margin-top:10px">Tudo isso vive num<br>diretório <span class="cyan">.claude/</span>
+          </h2>
+          <p class="lead reveal" style="margin-top:14px;max-width:58ch">Os quatro pilares deixam de ser abstração quando
+            viram arquivos concretos no repositório. A pergunta prática é simples: <b>quem lê o quê?</b></p>
+          <div class="chips reveal" style="margin-top:18px">
+            <span class="chip c">skills</span><span class="chip c">subagents</span><span class="chip c">mcp</span><span
+              class="chip c">hooks</span><span class="chip c">plugins</span><span class="chip c">rules</span><span
+              class="chip c">worktree</span>
+          </div>
+        </div>
+        <div class="figframe reveal" style="min-width:0">
+          <div class="shot"><img src="img-harness-anatomy.jpg" alt="O modelo no centro e o harness ao redor"></div>
+        </div>
+      </div>
+      <div class="notes-src" hidden>
+        Transição para a parte concreta. Ferramentas como Claude Code e Codex convergem nos mesmos princípios; o que
+        muda é a sintaxe dos arquivos. A partir daqui, cada pilar da Parte 1 ganha um endereço no disco. Os exemplos são
+        genéricos e adaptáveis a qualquer projeto.
+      </div>
+    </section>
+
+    <!-- 16b PARTE 2 · O PROJETO (a partir do PRD) -->
+    <section class="slide" data-part="O projeto">
+      <div class="shead reveal"><span class="kick p2">Parte 2 · O projeto</span></div>
+      <div class="sbody">
+        <h2 class="reveal" style="margin-bottom:4px">Do "<span class="cyan">o quê</span>" ao "<span class="teal">o que
+            fazer</span>".</h2>
+        <p class="lead reveal" style="max-width:86ch;margin-bottom:14px;font-size:clamp(13.5px,1.18vw,16.5px)">O gestor
+          comercial vê <b>que</b> um KPI caiu — o painel não diz <b>por quê</b> nem <b>o que fazer</b>. O <b>agente</b>
+          é um chat que cruza números e texto e devolve um <b>relatório de melhoria fundamentado</b>, a partir de uma
+          pergunta em linguagem natural.</p>
+        <div class="cols c3 reveal" style="gap:13px;align-items:stretch">
+          <div class="card" style="padding:13px 15px;border-left:3px solid var(--cyan)">
+            <div class="tt" style="font-size:15.5px"><span class="dot c"></span>Os números · <i>o quê / quanto</i></div>
+            <p><b>text-to-SQL</b> no Postgres (somente leitura): quais KPIs estão abaixo da meta e em qual dimensão —
+              região, produto, canal.</p>
+          </div>
+          <div class="card" style="padding:13px 15px;border-left:3px solid var(--teal)">
+            <div class="tt" style="font-size:15.5px"><span class="dot t"></span>O texto · <i>por quê / o que fazer</i>
+            </div>
+            <p><b>recuperação qualitativa</b> no Qdrant: voz do cliente e o histórico de tentativas — o que já funcionou
+              e o que falhou.</p>
+          </div>
+          <div class="card" style="padding:13px 15px;border-left:3px solid var(--amber)">
+            <div class="tt" style="font-size:15.5px"><span class="dot a"></span>Grounding · <i>a regra de ouro</i></div>
+            <p>Recomendações priorizadas, cada uma <b>amarrada a uma fonte rastreável</b>. Prescrição sem fonte é falha,
+              não resposta.</p>
+          </div>
+        </div>
+        <div class="cols c2 reveal" style="margin-top:14px;gap:clamp(20px,3vw,44px);align-items:start">
+          <div>
+            <div
+              style="font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin-bottom:4px">
+              features que importam</div>
+            <ul class="blist" style="font-size:clamp(12px,1vw,15px)">
+              <li><span class="k">›</span>
+                <div>"<b>Como melhorar minhas vendas no próximo mês?</b>" — o agente resolve período-alvo e escopo e
+                  <b>declara as premissas</b> no topo.</div>
+              </li>
+              <li><span class="k">›</span>
+                <div>Separa <b>queda real de variação sazonal</b> — tendência recente × mesmo período de anos
+                  anteriores.</div>
+              </li>
+              <li><span class="k">›</span>
+                <div><b>Streaming</b> + <b>multi-turno</b> ("e na região Sudeste?") sem repetir o contexto.</div>
+              </li>
+              <li><span class="k">›</span>
+                <div>O analista <b>inspeciona o SQL e as fontes</b>. O agente <b>recomenda, não age</b> — somente
+                  leitura, zero efeito colateral.</div>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <div
+              style="font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin-bottom:8px">
+              stack</div>
+            <div class="chips">
+              <span class="chip a">FastAPI · Python 3.13 · uv</span>
+              <span class="chip a">LangChain / LangGraph</span>
+              <span class="chip c">React + Vite</span>
+              <span class="chip c">Postgres</span>
+              <span class="chip c">Qdrant</span>
+              <span class="chip c">MinIO</span>
+              <span class="chip t">nginx</span>
+              <span class="chip t">OpenAI embeddings</span>
+            </div>
+            <div class="figcap" style="margin-top:12px">grafo LangGraph determinístico · stores pré-populados · nginx é
+              a única porta exposta</div>
+          </div>
+        </div>
+      </div>
+      <div class="notes-src" hidden>
+        Mergulho no produto, a partir do <span class="mono">PRD.md</span>. <b>Problema:</b> o gestor vê QUE um KPI caiu
+        (faturamento, recompra abaixo da meta), mas o painel não diz POR QUÊ nem O QUE FAZER — a explicação mora em
+        texto
+        não estruturado (tickets, NPS aberto, atas, post-mortems) que ninguém cruza com os números. <b>Solução:</b> chat
+        agêntico que cruza duas naturezas de dado — <b>números</b> (text-to-SQL no Postgres, somente leitura) dizem o
+        quê/quanto (quais KPIs abaixo da meta, em qual dimensão); <b>texto</b> (recuperação no Qdrant) diz por quê/o que
+        fazer (voz do cliente, o que já se tentou). <b>Regra de ouro: grounding</b> — toda recomendação amarrada a uma
+        fonte, zero prescrição sem origem. Features: pergunta em linguagem natural; o agente resolve período-alvo (mês
+        atual +1, tratando virada de ano) e escopo e <b>declara as premissas</b>; separa queda real de sazonalidade
+        (tendência × anos anteriores); não repete recomendações de relatórios passados; streaming; multi-turno; o
+        analista inspeciona SQL e fontes; o agente recomenda, não age. <b>Stack:</b> FastAPI (Python 3.13/uv) +
+        LangGraph
+        (grafo determinístico) + React/Vite, sobre Postgres + Qdrant + MinIO, nginx como única porta, embeddings OpenAI.
+        <b>Fora de escopo:</b> ingestão, multi-tenant, efeitos colaterais, forecasting estatístico formal, BI
+        self-service genérico.
+      </div>
+    </section>
+
+    <!-- 16c PARTE 2 · O QUE JÁ ESTÁ POSTO -->
+    <section class="slide" data-part="O que já está posto">
+      <div class="shead reveal"><span class="kick p2">Parte 2 · Ponto de partida</span></div>
+      <div class="sbody">
+        <h2 class="reveal" style="margin-bottom:4px">O que já está posto <span class="amber">antes</span> da câmera
+          ligar.</h2>
+        <p class="lead reveal" style="max-width:82ch;margin-bottom:14px;font-size:clamp(13.5px,1.15vw,16.5px)">Preparado
+          fora do palco para focarmos no harness e na execução — não em encanamento. <span class="mono"
+            style="color:var(--cyan)">github.com/caio-moliveira/workshop-agent-harness</span></p>
+        <div class="cols c2 reveal" style="gap:clamp(22px,3.2vw,52px);align-items:start">
+          <div>
+            <div
+              style="font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--teal);margin-bottom:6px">
+              infra · dados · spec</div>
+            <ul class="blist" style="font-size:clamp(12.5px,1.02vw,15.5px)">
+              <li><span class="k">✓</span>
+                <div><b>Repo com <span class="mono">uv</span></b> (Python 3.13) — <span
+                    class="mono">pyproject.toml</span> + <span class="mono">uv.lock</span></div>
+              </li>
+              <li><span class="k">✓</span>
+                <div><b>Ingestão já feita</b> (<span class="mono">seed/</span>) — ~5 anos de vendas no Postgres + corpus
+                  no Qdrant/MinIO, com narrativas plantadas</div>
+              </li>
+              <li><span class="k">✓</span>
+                <div><b>Stack local</b> (<span class="mono">docker-compose.yml</span>) — postgres · qdrant · minio · api
+                  · nginx</div>
+              </li>
+              <li><span class="k">✓</span>
+                <div><b><span class="mono">PRD.md</span></b> — construído com a skill <b class="amber">/grill-me</b>
+                  (entrevista que afia a ideia) → consolidado</div>
+              </li>
+              <li><span class="k">✓</span>
+                <div><b>Harness no <span class="mono">.claude/</span></b> — rules, hooks, MCP, subagente, comandos <span
+                    class="d" style="color:var(--amber)">▸ detalhado no próximo slide</span></div>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <div
+              style="font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan);margin-bottom:6px">
+              skills baixadas · <span style="text-transform:none">skills-lock.json</span></div>
+            <ul class="blist" style="font-size:clamp(11px,.92vw,13.5px)">
+              <li><span class="k">↓</span>
+                <div><b>Matt Pocock</b> · grill-me, to-prd, to-issues, tdd, handoff…<div class="d mono">
+                    github.com/mattpocock/skills</div>
+                </div>
+              </li>
+              <li><span class="k">↓</span>
+                <div><b>LangChain / LangGraph / Deep Agents</b>
+                  <div class="d mono">github.com/langchain-ai/langchain-skills</div>
+                </div>
+              </li>
+              <li><span class="k">↓</span>
+                <div><b>FastAPI patterns</b>
+                  <div class="d mono">github.com/affaan-m/ECC</div>
+                </div>
+              </li>
+              <li><span class="k">↓</span>
+                <div><b>React</b> · <b>React UI patterns</b>
+                  <div class="d mono">github.com/lobehub/lobehub · github.com/sickn33/antigravity-awesome-skills</div>
+                </div>
+              </li>
+              <li><span class="k">↓</span>
+                <div><b>UI/UX Pro Max</b>
+                  <div class="d mono">github.com/nexu-io/open-design</div>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="callout reveal" style="margin-top:14px;font-size:clamp(13.5px,1.2vw,17px)">Próximos passos:
+          <b class="mono">/to-issues</b> (PRD → fatias <i>ready-for-agent</i>; tracker e labels já no
+          <span class="mono">CLAUDE.md</span>) → <b>executar issue a issue</b>.</div>
+      </div>
+      <div class="notes-src" hidden>
+        O que foi preparado fora do palco, para focarmos no harness e na execução. Repo no GitHub
+        (<span class="mono">caio-moliveira/workshop-agent-harness</span>): <b>uv</b> + Python 3.13; <b>ingestão já
+          feita</b>
+        em <span class="mono">seed/</span> (não se reproduz em runtime — o app é <b>runtime puro</b>); stack
+        <span class="mono">docker-compose</span> (postgres/qdrant/minio/api/nginx, nginx é a única porta exposta);
+        <span class="mono">PRD.md</span> construído com <b>/grill-me</b> (entrevista que afia a ideia sem dó). As skills
+        foram baixadas e travadas em <span class="mono">skills-lock.json</span> (fontes: Matt Pocock, LangChain,
+        FastAPI,
+        React, UI/UX). O harness já está montado — próximo slide detalha. Próximos passos:
+        <span class="mono">/to-issues</span> (fatiar o PRD em fatias verticais <i>ready-for-agent</i>; tracker no
+        GitHub e labels de triagem já documentados no <span class="mono">CLAUDE.md</span>) — e então executar
+        issue a issue.
+      </div>
+    </section>
+
+    <!-- 16d PARTE 2 · O HARNESS QUE CONSTRUÍMOS -->
+    <section class="slide" data-part="O harness que construímos">
+      <div class="shead reveal"><span class="kick p2">Parte 2 · O harness que construímos</span></div>
+      <div class="sbody">
+        <h2 class="reveal" style="margin-bottom:4px">Cada peça do <span class="cyan">.claude/</span>, e <span
+            class="amber">por que</span> ela existe.</h2>
+        <p class="lead reveal" style="max-width:84ch;margin-bottom:14px;font-size:clamp(13.5px,1.15vw,16.5px)">Não é
+          template genérico: cada arquivo amarra um <b>padrão do nosso time</b> a um <b>comportamento que queremos
+            garantir</b>. <span style="color:var(--mut);font-size:13px">o que faz · por que usamos</span></p>
+        <div class="cols c3 reveal" style="gap:13px;align-items:stretch">
+          <div class="card" style="padding:13px 15px">
+            <div class="tt" style="font-size:16px"><span class="dot c"></span>rules/ <span class="mono"
+                style="font-size:11px;color:var(--mut)">path-scoped</span></div>
+            <p><b>O que faz:</b> 5 padrões por área (estilo, backend, agente, frontend, testes) que carregam <b>só ao
+                tocar a área</b>, via <span class="mono">paths:</span>.</p>
+            <p><b class="amber">Por que:</b> o agente segue a convenção certa sem inchar o contexto com regra que não
+              interessa agora.</p>
+          </div>
+          <div class="card" style="padding:13px 15px">
+            <div class="tt" style="font-size:16px"><span class="dot a"></span>hooks <span class="mono"
+                style="font-size:11px;color:var(--mut)">settings.json</span></div>
+            <p><b>O que faz:</b> <span class="mono">PostToolUse</span> roda <span class="mono">ruff</span> a cada
+              edição; <span class="mono">Stop</span> roda ruff+mypy+pytest e <b>bloqueia</b> se vermelho.</p>
+            <p><b class="amber">Por que:</b> estilo e qualidade não dependem de boa vontade — o agente não declara
+              "pronto" no vermelho.</p>
+          </div>
+          <div class="card" style="padding:13px 15px">
+            <div class="tt" style="font-size:16px"><span class="dot t"></span>.mcp.json</div>
+            <p><b>O que faz:</b> Postgres <b>somente-leitura</b> (<span class="mono">--access-mode=restricted</span>) p/
+              o agente inspecionar o schema real.</p>
+            <p><b class="amber">Por que:</b> grounding na infra antes de escrever SQL — e o invariante read-only virou
+              configuração.</p>
+          </div>
+          <div class="card" style="padding:13px 15px">
+            <div class="tt" style="font-size:16px"><span class="dot c"></span>agents/revisor-codigo</div>
+            <p><b>O que faz:</b> subagente que revisa o diff contra as rules + invariantes, em <b>janela fresca</b>.</p>
+            <p><b class="amber">Por que:</b> verificação <i>soft</i> (LLM revendo código) que complementa o gate
+              <i>hard</i> dos hooks.</p>
+          </div>
+          <div class="card" style="padding:13px 15px">
+            <div class="tt" style="font-size:16px"><span class="dot a"></span>skills/</div>
+            <p><b>O que faz:</b> procedimentos reutilizáveis (Matt, LangChain…) carregados <b>sob demanda</b>.</p>
+            <p><b class="amber">Por que:</b> capacidade na hora certa, sem despejar tudo no contexto — curar, não
+              despejar.</p>
+          </div>
+          <div class="card" style="padding:13px 15px">
+            <div class="tt" style="font-size:16px"><span class="dot t"></span>commands + métricas</div>
+            <p><b>O que faz:</b> <span class="mono">/validar</span> (gate invocável) e <span
+                class="mono">/scorecard</span>, medindo a execução contra a <b>Definição de Pronto</b>.</p>
+            <p><b class="amber">Por que:</b> líderes enxergam se está sendo bem executado — número, não fé.</p>
+          </div>
+        </div>
+        <div class="callout reveal" style="margin-top:14px;font-size:clamp(13px,1.15vw,16.5px)">Todo erro vira regra,
+          hook ou teste — o harness <b>aperta um dente a cada falha</b>. O <span class="mono">/scorecard</span> é a
+          prova de que está apertando.</div>
+      </div>
+      <div class="notes-src" hidden>
+        Detalhe do harness que construímos — cada peça com <b>o que faz</b> e <b>por que existe</b>. <b>rules/</b>
+        path-scoped: carregam só ao tocar a área (via <span class="mono">paths:</span> no frontmatter), o que mantém o
+        CLAUDE.md enxuto. <b>hooks</b> no <span class="mono">settings.json</span>: <span class="mono">PostToolUse</span>
+        aplica estilo (ruff) a cada edição; <span class="mono">Stop</span> é o gate (ruff+mypy+pytest) que bloqueia o
+        fim
+        do trabalho no vermelho. <b>.mcp.json</b>: Postgres somente-leitura (<span
+          class="mono">--access-mode=restricted</span>)
+        para o agente inspecionar o schema antes de escrever SQL — o invariante read-only virou config.
+        <b>revisor-codigo</b>:
+        subagente de revisão em janela fresca (verificação soft, complementa o gate hard). <b>skills/</b>: procedimentos
+        sob demanda (curar o contexto, não despejar). <b>commands + métricas</b>: <span class="mono">/validar</span> e
+        <span class="mono">/scorecard</span> medem a execução contra a <b>Definição de Pronto</b>. Fecho: o harness não
+        encolhe, ele se move — cada erro vira regra/hook/teste, e o <span class="mono">/scorecard</span> prova.
+      </div>
+    </section>
+
+    <!-- 17 PARTE 2 · O MAPA DE ARQUIVOS (explorador interativo) -->
+    <section class="slide" data-part="O mapa de arquivos">
+      <div class="shead reveal"><span class="kick p2">Parte 2 · O mapa de arquivos</span></div>
+      <div class="split">
+        <div class="reveal">
+          <h2 style="font-size:clamp(22px,2.8vw,38px);margin-bottom:6px">Quem lê <span class="cyan">o quê</span>.</h2>
+          <p class="fd" style="margin-bottom:12px">Cada peça do <span class="mono">.claude/</span> responde uma pergunta
+            diferente.</p>
+          <div id="fileTree" style="display:flex;flex-direction:column;gap:4px">
+            <button class="fitem" data-i="0"><span class="fi">▸</span> CLAUDE.md <span class="fmut">· o quê
+                construir</span></button>
+            <button class="fitem" data-i="1"><span class="fi">▸</span> rules/ <span class="fmut">· regras por
+                contexto</span></button>
+            <button class="fitem" data-i="2"><span class="fi">▸</span> settings.json <span class="fmut">· como
+                operar</span></button>
+            <button class="fitem" data-i="3"><span class="fi">▸</span> hooks <span class="fmut">· o que
+                garantir</span></button>
+            <button class="fitem" data-i="4"><span class="fi">▸</span> .mcp.json <span class="fmut">· conexões
+                externas</span></button>
+            <button class="fitem" data-i="5"><span class="fi">▸</span> skills/ <span class="fmut">· capacidades
+                reutilizáveis</span></button>
+            <button class="fitem" data-i="6"><span class="fi">▸</span> agents/ <span class="fmut">· subagents
+                isolados</span></button>
+            <button class="fitem" data-i="7"><span class="fi">▸</span> plugins <span class="fmut">· empacotar &
+                compartilhar</span></button>
+            <button class="fitem" data-i="8"><span class="fi">▸</span> git worktree <span class="fmut">· paralelo &
+                isolado</span></button>
+          </div>
+          <div class="figcap" style="margin-top:12px">clique em cada arquivo para ver o papel e um exemplo</div>
+        </div>
+        <div class="fdetail reveal" id="fileDetail"></div>
+      </div>
+      <div class="notes-src" hidden>
+        Explorador interativo, o coração da parte prática, alinhado à documentação do Claude Code (estrutura do
+        diretório
+        <span class="mono">.claude/</span>). A frase-síntese: <b>"CLAUDE.md diz o quê; rules escopam por arquivo;
+          settings.json diz como; hooks garantem; MCP conecta; skills, agents e plugins empacotam capacidade; o worktree
+          isola."</b> Clique em cada caixinha; cada uma traz no rodapé o link da doc oficial daquele tópico. Pontos a
+        destacar: precedência de settings (managed → local → projeto → usuário); MCP <b>não</b> mora no settings.json
+        (vive em <span class="mono">.mcp.json</span>) e é superfície de ataque; subagents (<span
+          class="mono">.claude/agents/</span>) rodam em janela própria e devolvem só o resumo; plugins empacotam e
+        compartilham via marketplace; o Claude cria worktrees via <span class="mono">--worktree</span>. Fontes:
+        code.claude.com/docs/en (claude-directory, sub-agents, plugins, worktrees).
+      </div>
+    </section>
+
+    <!-- 18 PARTE 2 · SKILLS (abas interativas) -->
+    <section class="slide" data-part="Skills">
+      <div class="shead reveal"><span class="kick p2">Parte 2 · Skills</span></div>
+      <div class="sbody">
+        <h2 class="reveal" style="margin-bottom:6px">Skill não é um <span class="amber">.md</span>. É uma pasta que o
+          agente descobre.</h2>
+        <div class="tabs reveal" id="skillTabs" style="margin-top:14px">
+          <button class="tab" data-i="0">o que é</button>
+          <button class="tab" data-i="1">estrutura</button>
+          <button class="tab" data-i="2">como carrega</button>
+          <button class="tab" data-i="3">boas práticas</button>
+          <button class="tab" data-i="4">famílias</button>
+        </div>
+        <div class="tabpanel reveal" id="skillPanel"></div>
+      </div>
+      <div class="notes-src" hidden>
+        Skill ≠ .md: pasta com SKILL.md + scripts + references + assets. Progressive disclosure: o agente indexa só
+        nome+descrição no startup; lê o SKILL.md sob demanda; executa scripts; persiste dados entre sessões. Boas
+        práticas: a description é o gatilho (não um resumo); Gotchas são ouro; scripts &gt; boilerplate; comece simples
+        e
+        itere; verification skills dão o maior impacto medível. Subagents e plugins agora moram no slide anterior (Mapa
+        de Arquivos). Fonte: code.claude.com/docs/en/skills. Use as abas para abrir o que precisar.
+      </div>
+    </section>
+
+    <!-- 19 PARTE 2 · MEMÓRIA ENTRE SESSÕES -->
+    <section class="slide" data-part="Memória entre sessões">
+      <div class="shead reveal"><span class="kick p2">Parte 2 · Memória entre sessões</span></div>
+      <div class="sbody">
+        <h2 class="reveal">A janela é transitória.<br>Os <span class="amber">arquivos</span> lembram.</h2>
+        <p class="lead reveal" style="margin-top:12px;max-width:70ch">Quando o contexto enche ou reinicia, nada na
+          conversa sobrevive. O que sobrevive é o que foi escrito no repositório, em quatro formas:</p>
+        <div class="cols c2 reveal" style="margin-top:18px;align-items:stretch">
+          <div class="card">
+            <div class="tt" style="font-size:17px"><span class="dot a"></span>Handoff</div>
+            <p>Um resumo compacto da sessão (objetivo, o que foi feito, próximos passos) para outro agente continuar
+              de
+              onde parou.</p>
+          </div>
+          <div class="card">
+            <div class="tt" style="font-size:17px"><span class="dot c"></span>MEMORY.md</div>
+            <p>Um índice de 1 linha por fato ou decisão durável, carregado a cada sessão.</p>
+          </div>
+          <div class="card">
+            <div class="tt" style="font-size:17px"><span class="dot t"></span>docs/adr/</div>
+            <p>Architecture Decision Records: registram <b>o porquê</b> de cada decisão, não só o resultado.</p>
+          </div>
+          <div class="card">
+            <div class="tt" style="font-size:17px"><span class="dot a"></span>Auto-memory</div>
+            <p>O Claude escreve notas para si mesmo em <span class="mono">~/.claude/projects/.../MEMORY.md</span>,
+              carregadas no início de cada sessão (ligue/desligue com <span class="mono">/memory</span>).</p>
+          </div>
+        </div>
+        <div class="callout reveal cy" style="margin-top:18px;font-size:clamp(13.5px,1.2vw,17px)">A janela de contexto é
+          finita (~<b>200K tokens</b>) e enche com system prompt, CLAUDE.md, tools e, sobretudo, leituras de arquivo.
+          Quando lota, o <b>auto-compact</b> resume a conversa (<span class="mono">/compact</span>; <span
+            class="mono">/clear</span> zera). E <b class="cyan">subagents rodam em janela separada</b>: leem muito e
+          devolvem só o resumo, preservando a principal.
+          <div class="subtle">janela de contexto · <a href="https://code.claude.com/docs/en/context-window"
+              target="_blank" rel="noopener"
+              style="color:var(--cyan);text-decoration:none">code.claude.com/docs/en/context-window</a>
+          </div>
+        </div>
+      </div>
+      <div class="notes-src" hidden>
+        Responde "como a memória de sessão é usada no repositório". A context window é descartável; persiste-se em
+        arquivos. Handoff = brief compacto para continuar. MEMORY.md = índice durável. ADRs = o porquê. Auto-memory =
+        recurso da ferramenta (o Claude escreve em ~/.claude/projects/.../MEMORY.md, carregado no início da sessão).
+        <b>Janela de contexto (doc context-window):</b> ~200K tokens; o que mais enche são as leituras de arquivo; o
+        auto-compact resume a conversa quando lota (<span class="mono">/compact</span>), <span
+          class="mono">/clear</span>
+        zera. Subagents usam uma janela separada e devolvem só o resumo (ex.: leem ~6.100 tokens e retornam ~420), o que
+        preserva a janela principal. Para horizontes longos, o reset com handoff reconstrói o essencial. Fonte:
+        code.claude.com/docs/en/context-window.
+      </div>
+    </section>
+
+    <!-- 20 PARTE 2 · SUA MEMÓRIA É SEU HARNESS -->
+    <section class="slide" data-part="Sua memória é seu harness">
+      <div class="shead reveal"><span class="kick p2">Parte 2 · Sua memória é seu harness</span></div>
+      <div class="split">
+        <div>
+          <h2 class="reveal" style="font-size:clamp(23px,3vw,42px)">Quem controla o harness,<br>controla a <span
+              class="amber">memória</span>.</h2>
+          <p class="lead reveal" style="margin-top:12px;max-width:52ch;font-size:clamp(14px,1.2vw,17px)">Memória não é
+            um
+            plugin: é <b>responsabilidade central do harness</b>. Ele cuida do curto prazo (conversa e resultados de
+            tools) e do longo prazo (entre sessões: personalização e aprendizado).</p>
+          <p class="bigquote reveal" style="margin-top:16px;font-size:clamp(16px,1.7vw,23px)">"Plugar memória num
+            harness
+            é como plugar 'dirigir' num carro."<span class="src">Sarah Wooders</span></p>
+          <div class="callout reveal" style="margin-top:16px;font-size:clamp(13.5px,1.2vw,17px)">A memória vira um
+            <b>dataset proprietário</b> das interações e preferências. Sem ela, seu agente é replicável por qualquer um
+            com as mesmas tools. <span class="amber">Seu harness é seu fosso.</span>
+          </div>
+        </div>
+        <div class="reveal">
+          <div
+            style="font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin-bottom:10px">
+            trade-off: conveniência × portabilidade ↓</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="card" style="border-left:3px solid var(--amber);padding:12px 16px">
+              <div class="tt" style="font-size:15px"><span class="dot a"></span>APIs stateful</div>
+              <p>O estado mora no provedor (OpenAI Responses, server-side compaction). Conveniente, mas amarra a troca
+                de
+                modelo.</p>
+            </div>
+            <div class="card" style="border-left:3px solid #f0997b;padding:12px 16px">
+              <div class="tt" style="font-size:15px"><span class="dot" style="background:#f0997b"></span>Harness fechado
+              </div>
+              <p>A memória existe, mas é opaca (ex.: Claude Agent SDK). Você não enxerga o que entra e sai do contexto.
+              </p>
+            </div>
+            <div class="card" style="border-left:3px solid var(--red);padding:12px 16px">
+              <div class="tt" style="font-size:15px"><span class="dot r"></span>Tudo atrás de API proprietária</div>
+              <p>Harness e memória fechados. Visibilidade e portabilidade próximas de zero.</p>
+            </div>
+            <div class="callout cy" style="margin-top:4px;font-size:clamp(13px,1.1vw,16px)">A saída do artigo: harness
+              <b>open-source e model-agnostic</b>, padrões abertos (AGENTS.md, skills) e <b>memory stores plugáveis</b>
+              (Postgres · Redis · Mongo), com self-host.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="notes-src" hidden>
+        Novo slide, baseado em "Your Harness, Your Memory" (Harrison Chase, LangChain). Complementa o slide anterior
+        (tático: onde a memória mora) com a camada estratégica: <b>de quem é a memória</b>. Tese: memória não é plugin,
+        é
+        responsabilidade central do harness. Sarah Wooders: "plugar memória num harness é como plugar dirigir num
+        carro".
+        Curto prazo (conversa e tools) e longo prazo (entre sessões) são ambos do harness. Por que importa: a memória
+        vira um <b>dataset proprietário</b> das interações e preferências, um fosso competitivo; sem memória, o agente é
+        replicável por quem tem as mesmas tools. Espectro de lock-in, apresentado como <b>trade-off entre conveniência e
+          portabilidade</b> (exemplos, não vilões): (1) APIs stateful guardam o estado no provedor (OpenAI Responses,
+        server-side compaction) e amarram a troca de modelo; (2) harness fechado com memória opaca (ex.: Claude Agent
+        SDK); (3) harness e memória atrás de API proprietária, sem visibilidade nem portabilidade. Saída recomendada
+        pelo
+        artigo: harness open-source e model-agnostic, padrões abertos (AGENTS.md, skills), memory stores plugáveis
+        (Postgres, Redis, Mongo) e self-host. Fonte: langchain.com/blog/your-harness-your-memory.
+      </div>
+    </section>
+
+    <!-- 21 PARTE 2 · FLUXO DE REFERÊNCIA -->
+    <section class="slide" data-part="Do entendimento ao código">
+      <div class="shead reveal"><span class="kick p2">Parte 2 · do entendimento ao código</span>
+      </div>
+      <div class="sbody">
+        <h2 class="reveal" style="margin-bottom:6px">A maior falha não é o código.<br>É o <span
+            class="amber">desalinhamento</span>.</h2>
+        <p class="lead reveal" style="max-width:74ch;margin-bottom:14px">Um fluxo de skills composáveis ataca o problema
+          na ordem certa: alinhar antes de gerar, especificar antes de fatiar, validar a cada fatia.</p>
+        <div class="svgwrap reveal" data-diagram="pipeline" style="max-height:30vh"></div>
+        <div class="cols c2 reveal" style="margin-top:14px;gap:18px;align-items:stretch">
+          <div class="card" style="padding:14px 18px">
+            <div class="tt" style="font-size:15px"><span class="dot c"></span>Por que funciona</div>
+            <p>Skills pequenas, composáveis e independentes de modelo: você mantém o controle. O oposto de frameworks
+              que "tomam conta" do processo e tornam o erro difícil de isolar.</p>
+          </div>
+          <div class="card" style="padding:14px 18px">
+            <div class="tt" style="font-size:15px"><span class="dot a"></span>O elo com a Parte 1</div>
+            <p>Alinhar = instrução · PRD/issues = estado durável · TDD = validação · handoff = memória. O fluxo é a
+              anatomia em movimento.</p>
+          </div>
+        </div>
+      </div>
+      <div class="notes-src" hidden>
+        Apresentado como fluxo de referência genérico (ex.: o conjunto open-source <span
+          class="mono">mattpocock/skills</span>), não como processo proprietário. Passos: <b>grelhar</b> (o agente te
+        entrevista até resolver cada ramo de decisão e atualiza CONTEXT.md/ADR) → <b>PRD</b> (transforma a conversa em
+        PRD e abre como issue) → <b>issues</b> (quebra o PRD em fatias verticais independentes) → <b>TDD</b>
+        (red-green-refactor, uma fatia por vez; diagnose para bugs) → <b>handoff</b> (compacta para a próxima sessão).
+        Filosofia: skills pequenas e composáveis preservam o controle, ao contrário de frameworks que assumem o processo
+        inteiro.
+      </div>
+    </section>
+
+    <!-- 21 PARTE 2 · O CICLO DE VIDA DO PROJETO -->
+    <section class="slide" data-part="Ciclo de vida">
+      <div class="shead reveal"><span class="kick p2">Parte 2 · O ciclo de vida do projeto</span></div>
+      <div class="sbody">
+        <h2 class="reveal" style="margin-bottom:6px">Qualidade começa antes do código.<br>E não <span class="amber">para
+            nele</span>.</h2>
+        <p class="lead reveal" style="max-width:82ch;font-size:clamp(14px,1.25vw,18px)">Cada fase de um projeto de IA
+          entrega um artefato. Mapeados, eles não são burocracia: são <b>spec</b>, <b>validação</b> e <b>memória</b>. É
+          o
+          harness aplicado ao projeto inteiro. <span style="font-size:13px;color:var(--mut)">Clique em cada caixinha
+            para
+            ver o que é e como funciona na prática.</span></p>
+        <div id="lcGrid" class="reveal">
+          <div class="lclane">
+            <div class="lchead"><span class="pdot" style="background:#9aa0ad"></span>Fase 0 · Descoberta</div>
+            <button class="lcbox" data-k="viabilidade" style="border-left-color:#9aa0ad">
+              <div class="bn">Estudo de viabilidade</div>
+              <div class="bs">tipo de IA · restrições</div>
+            </button>
+            <div class="lcgate">vai ou não vai?</div>
+          </div>
+          <div class="lclane">
+            <div class="lchead"><span class="pdot" style="background:var(--cyan)"></span>Fase 1 · Produto</div>
+            <button class="lcbox" data-k="prd" style="border-left-color:var(--cyan)">
+              <div class="bn">PRD</div>
+              <div class="bs">personas · escopo · métricas</div>
+            </button>
+            <button class="lcbox" data-k="bdd" style="border-left-color:var(--cyan)">
+              <div class="bn">BDD</div>
+              <div class="bs">comportamento esperado</div>
+            </button>
+            <div class="lcgate">stakeholders aprovam</div>
+          </div>
+          <div class="lclane">
+            <div class="lchead"><span class="pdot" style="background:var(--teal)"></span>Fase 2 · Especificação</div>
+            <button class="lcbox" data-k="sdd" style="border-left-color:var(--teal)">
+              <div class="bn">SDD</div>
+              <div class="bs">spec-driven · 5 perspectivas</div>
+            </button>
+            <div class="lcgate">spec validada</div>
+          </div>
+          <div class="lclane">
+            <div class="lchead"><span class="pdot" style="background:#afa9ec"></span>Fase 3 · Arquitetura</div>
+            <button class="lcbox" data-k="adr" style="border-left-color:#afa9ec">
+              <div class="bn">ADR</div>
+              <div class="bs">decisões · trade-offs</div>
+            </button>
+            <div class="lcgate">revisão técnica</div>
+          </div>
+          <div class="lclane">
+            <div class="lchead"><span class="pdot" style="background:#f0997b"></span>Fase 4 · Implementação</div>
+            <button class="lcbox" data-k="tdd" style="border-left-color:#f0997b">
+              <div class="bn">TDD</div>
+              <div class="bs">parte determinística</div>
+            </button>
+            <button class="lcbox" data-k="eval" style="border-left-color:#f0997b">
+              <div class="bn">Eval-Driven</div>
+              <div class="bs">parte probabilística</div>
+            </button>
+            <div class="lcgate">evals acima do limiar</div>
+          </div>
+          <div class="lclane">
+            <div class="lchead"><span class="pdot" style="background:#ed93b1"></span>Fase 5 · Operação</div>
+            <button class="lcbox" data-k="observ" style="border-left-color:#ed93b1">
+              <div class="bn">Observabilidade</div>
+              <div class="bs">logs · alertas · desvio</div>
+            </button>
+            <button class="lcbox" data-k="docs" style="border-left-color:#ed93b1">
+              <div class="bn">Documentação</div>
+              <div class="bs">docs vivos do sistema</div>
+            </button>
+            <button class="lcbox" data-k="govern" style="border-left-color:#ed93b1">
+              <div class="bn">Governança</div>
+              <div class="bs">políticas · responsabilidades</div>
+            </button>
+            <button class="lcbox" data-k="rastreab" style="border-left-color:#ed93b1">
+              <div class="bn">Rastreabilidade</div>
+              <div class="bs">auditoria · RIPD</div>
+            </button>
+            <div class="lcgate">↻ avaliação contínua</div>
+          </div>
+        </div>
+      </div>
+      <div class="notes-src" hidden>
+        Slide novo, gancho do "do entendimento ao código". <b>Tese:</b> o harness não é só o <span
+          class="mono">.claude/</span>; é o ciclo de vida inteiro do projeto de IA. Seis fases (Descoberta, Produto,
+        Especificação, Arquitetura, Implementação, Operação), cada uma com artefatos que são <b>spec, validação ou
+          memória</b>, e marcos (gates) entre elas. Clique em cada caixinha para abrir o pop-up com o que é e como
+        funciona na prática. Mensagem central: <b>qualidade começa antes do código</b> (viabilidade, PRD, BDD, SDD) e
+        <b>continua depois dele</b> (observabilidade, governança, rastreabilidade). Mapear e fazer isso é construir o
+        harness do projeto, não burocracia. Base: a "Estrutura de Projetos" (cronologia estruturada do projeto de IA).
+      </div>
+    </section>
+
+    <!-- 22 PARTE 2 · O HARNESS COMEÇA ANTES DO CÓDIGO -->
+    <section class="slide" data-part="Antes do código">
+      <div class="shead reveal"><span class="kick p2">Parte 2 · O harness começa antes do código</span></div>
+      <div class="split">
+        <div>
+          <h2 class="reveal" style="font-size:clamp(23px,3.1vw,44px)">O harness começa antes da<br><span
+              class="amber">primeira linha de código</span>.</h2>
+          <p class="lead reveal" style="margin-top:14px;max-width:50ch">Seu primeiro commit não é uma feature. É o
+            <b>ambiente</b> onde o agente vai trabalhar. O trabalho do engenheiro deixou de ser escrever o código: é <b
+              class="amber">projetar o sistema</b> que o escreve.
+          </p>
+          <ul class="blist reveal" style="margin-top:16px">
+            <li><span class="k" style="width:auto;min-width:40px;color:var(--cyan)">dia 0</span>
+              <div>você <b>projeta o ambiente</b>
+                <div class="d">repo legível, regras, perímetro, validação, memória</div>
+              </div>
+            </li>
+            <li><span class="k" style="width:auto;min-width:40px;color:var(--teal)">dia 1</span>
+              <div>o agente escreve a primeira feature
+                <div class="d">dentro do perímetro, e se autovalida</div>
+              </div>
+            </li>
+            <li><span class="k" style="width:auto;min-width:40px;color:var(--amber);font-size:16px">∞</span>
+              <div>cada falha real aperta o harness <b>mais um dente</b>
+                <div class="d">você mede confiabilidade, não volume; cuida do design (anti-slop)</div>
+              </div>
+            </li>
+          </ul>
+          <div class="callout reveal" style="margin-top:16px;font-size:clamp(14px,1.3vw,18px)">Ferramentas mudam. <span
+              class="amber">Os princípios do harness se acumulam.</span></div>
+        </div>
+
+        <div class="reveal">
+          <div class="card" style="padding:0;overflow:hidden">
+            <div
+              style="font-family:var(--mono);font-size:12px;color:var(--mut);padding:12px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px">
+              <span class="dot t"></span>git init · o primeiro commit do harness
+            </div>
+            <div
+              style="font-family:var(--mono);font-size:clamp(11.5px,1vw,14px);line-height:1.5;padding:16px;display:grid;grid-template-columns:auto 1fr;gap:11px 16px">
+              <span class="teal">+ CLAUDE.md</span><span style="color:var(--mut)">o mapa · 3 regras, não 300</span>
+              <span class="teal">+ .claude/rules/</span><span style="color:var(--mut)">contexto por caminho de
+                arquivo</span>
+              <span class="teal">+ settings.json</span><span style="color:var(--mut)">permissões · least
+                privilege</span>
+              <span class="teal">+ .claude/hooks/</span><span style="color:var(--mut)">pre-commit: lint + type +
+                test</span>
+              <span class="teal">+ skills/verify/</span><span style="color:var(--mut)">a verification skill (maior
+                ROI)</span>
+              <span class="teal">+ MEMORY.md</span><span style="color:var(--mut)">a memória começa vazia</span>
+            </div>
+            <div
+              style="font-family:var(--mono);font-size:11.5px;color:var(--amber);padding:11px 16px;border-top:1px solid var(--line)">
+              0 linhas de feature. O ambiente já está de pé.</div>
+          </div>
+          <div class="figcap reveal" style="margin-top:12px">o perímetro vem junto: sandbox · allow-list · gate humano
+            para o irreversível · todo MCP é superfície de ataque</div>
+        </div>
+      </div>
+      <div class="notes-src" hidden>
+        Slide de fechamento (substitui "Boas práticas para começar"). <b>Tese central da palestra:</b> o harness começa
+        antes do código. O primeiro commit não é uma feature; é o ambiente onde o agente vai trabalhar. O engenheiro
+        passa a <b>projetar o sistema</b> que escreve o código, fechando o arco "Agent = Model + Harness" ("if you're
+        not
+        the model, you're the harness"). <b>O "primeiro commit do harness" empacota os conselhos acionáveis das fontes,
+          agora com sentido:</b> CLAUDE.md = o mapa, comece com 3 regras e não 300 (Augment: over-constraining é falha
+        real; Osmani: cada regra rastreável a uma falha); <span class="mono">.claude/rules/</span> = regras por caminho;
+        settings.json = permissões com least privilege e perímetro (LangChain/Osmani); hooks = pre-commit (lint + type +
+        test) que tira a regra da boa vontade do modelo; skills/verify = a verification skill, maior impacto medível
+        (Anthropic, "How we use Skills"); MEMORY.md = a memória, começa vazia. <b>Linha do tempo:</b> dia 0 você projeta
+        o ambiente; dia 1 o agente escreve a primeira feature dentro do perímetro e se autovalida; depois, cada falha
+        real aperta o harness mais um dente (a catraca), você mede confiabilidade e não volume (Task Resolution, Code
+        Churn, Defect Escape · Augment) e cuida do design recorrentemente contra o "AI slop" (doc-gardening · OpenAI).
+        Fecho: ferramentas mudam, os princípios do harness se acumulam. Fontes: LangChain, Anthropic, OpenAI, Osmani,
+        Augment, Claude Code.
+      </div>
+    </section>
+
+    <!-- 19 REFERÊNCIAS -->
+    <section class="slide" data-part="Referências">
+      <div class="shead reveal"><span class="kick p2">Referências</span></div>
+      <div class="sbody reveal">
+        <div class="cols c2" style="gap:clamp(20px,3vw,48px);align-items:start">
+          <ul class="blist" style="font-size:clamp(11.5px,.95vw,14.5px)">
+            <li><span class="k">01</span>
+              <div><b>LangChain · Vivek Trivedy</b> · The Anatomy of an Agent Harness<div class="d mono">
+                  langchain.com/blog/the-anatomy-of-an-agent-harness</div>
+              </div>
+            </li>
+            <li><span class="k">02</span>
+              <div><b>Anthropic</b> · Harness design for long-running apps<div class="d mono">
+                  anthropic.com/engineering/harness-design-long-running-apps</div>
+              </div>
+            </li>
+            <li><span class="k">03</span>
+              <div><b>OpenAI</b> · Harness engineering (Codex)<div class="d mono">openai.com/index/harness-engineering
+                </div>
+              </div>
+            </li>
+            <li><span class="k">04</span>
+              <div><b>Addy Osmani</b> · Agent Harness Engineering<div class="d mono">
+                  addyosmani.com/blog/agent-harness-engineering</div>
+              </div>
+            </li>
+            <li><span class="k">05</span>
+              <div><b>Augment Code</b> · Harness engineering for AI coding agents<div class="d mono">
+                  augmentcode.com/guides/harness-engineering-ai-coding-agents</div>
+              </div>
+            </li>
+            <li><span class="k">06</span>
+              <div><b>Geoffrey Huntley</b> · The Loop / Ralph<div class="d mono">ghuntley.com/loop</div>
+              </div>
+            </li>
+            <li><span class="k">07</span>
+              <div><b>Anthropic · Claude Code</b> · How we use Skills<div class="d mono">
+                  claude.com/blog/lessons-from-building-claude-code-how-we-use-skills</div>
+              </div>
+            </li>
+            <li><span class="k">08</span>
+              <div><b>Dex Horthy · HumanLayer</b> · 12-Factor Agents<div class="d mono">
+                  github.com/humanlayer/12-factor-agents</div>
+              </div>
+            </li>
+          </ul>
+          <ul class="blist" style="font-size:clamp(11.5px,.95vw,14.5px)">
+            <li><span class="k">09</span>
+              <div><b>Matt Pocock</b> · Skills for Real Engineers <span class="amber">(fluxo de referência)</span>
+                <div class="d mono">github.com/mattpocock/skills</div>
+              </div>
+            </li>
+            <li><span class="k">10</span>
+              <div><b>Survey acadêmico</b> · Code as Agent Harness<div class="d mono">arXiv:2605.18747</div>
+              </div>
+            </li>
+            <li><span class="k">11</span>
+              <div><b class="cyan">Claude Code Docs</b> · Explore the .claude directory<div class="d mono">
+                  code.claude.com/docs/en/claude-directory</div>
+              </div>
+            </li>
+            <li><span class="k">12</span>
+              <div><b class="cyan">Claude Code Docs</b> · Subagents<div class="d mono">
+                  code.claude.com/docs/en/sub-agents</div>
+              </div>
+            </li>
+            <li><span class="k">13</span>
+              <div><b class="cyan">Claude Code Docs</b> · Plugins<div class="d mono">code.claude.com/docs/en/plugins
+                </div>
+              </div>
+            </li>
+            <li><span class="k">14</span>
+              <div><b class="cyan">Claude Code Docs</b> · Git worktrees<div class="d mono">
+                  code.claude.com/docs/en/worktrees</div>
+              </div>
+            </li>
+            <li><span class="k">15</span>
+              <div><b class="cyan">Claude Code Docs</b> · Context window · How Claude Code works<div class="d mono">
+                  code.claude.com/docs/en/context-window</div>
+              </div>
+            </li>
+            <li><span class="k">16</span>
+              <div><b>LangChain · Harrison Chase</b> · Your Harness, Your Memory<div class="d mono">
+                  langchain.com/blog/your-harness-your-memory</div>
+              </div>
+            </li>
+            <li><span class="k">17</span>
+              <div><b>DORA · Google Cloud</b> · Balancing the Tensions of AI <span class="amber">(IA é
+                  amplificador)</span>
+                <div class="d mono">dora.dev/insights/balancing-ai-tensions</div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="notes-src" hidden>
+        As fontes da palestra. 01–07 são as fontes primárias do tema. 08 (12-Factor Agents) dá o contraponto
+        "agentes são software bem-engenheirado" e a ideia do "dumb zone" (40–60% da janela). 09 é o conjunto
+        open-source usado como fluxo de referência da Parte 2. 10 é a sistematização acadêmica ("code as
+        harness"). <b>11–15 são a documentação oficial do Claude Code</b> (code.claude.com/docs), a base do alinhamento
+        da Parte 2: o diretório <span class="mono">.claude/</span>, subagents, plugins, git worktrees e a janela de
+        contexto. Confira sempre os originais.
+      </div>
+    </section>
+
+  </div><!-- /deck -->
+
+  <!-- right-side slide indicator -->
+  <nav class="dots" id="dots" aria-label="Navegação de slides"></nav>
+
+  <!-- scroll/drag hint -->
+  <div class="scrollhint" id="scrollhint"><span class="arrow">⌄</span> role ou arraste para navegar</div>
+
+  <!-- notes drawer -->
+  <div class="notes" id="notes">
+    <div class="nh"><span>Notas do palestrante</span><span class="mono" id="notesPart"></span></div>
+    <div class="nbody" id="notesBody"></div>
+  </div>
+
+  <!-- overview -->
+  <div class="ov" id="ov">
+    <h3>Visão geral · clique para ir ao slide</h3>
+    <div class="ovgrid" id="ovgrid"></div>
+  </div>
+
+  <!-- modal de explicação (ciclo de vida) -->
+  <div class="lcmodal" id="lcModal" aria-hidden="true">
+    <div class="box">
+      <button class="mx" id="lcClose" aria-label="Fechar">✕</button>
+      <div class="mph" id="lcMph"></div>
+      <div class="mh"><span class="hdot" id="lcHdot"></span><span id="lcTitle"></span></div>
+      <div class="ml">O que é</div>
+      <div class="mt" id="lcWhat"></div>
+      <div class="ml">Na prática</div>
+      <div class="mt" id="lcPrac"></div>
+    </div>
+  </div>
+
+  <script>
+    const slides = [...document.querySelectorAll('.slide')];
+    let i = 0;
+    const notes = document.getElementById('notes');
+    const notesBody = document.getElementById('notesBody');
+    const notesPart = document.getElementById('notesPart');
+    const ov = document.getElementById('ov');
+    const dotsNav = document.getElementById('dots');
+    const scrollhint = document.getElementById('scrollhint');
+    const pad = n => String(n).padStart(2, '0');
+
+    function render() {
+      slides.forEach((s, k) => s.classList.toggle('active', k === i));
+      const src = slides[i].querySelector('.notes-src');
+      notesBody.innerHTML = src ? src.innerHTML : '';
+      notesPart.textContent = slides[i].dataset.part || '';
+      [...dotsNav.children].forEach((b, k) => b.classList.toggle('on', k === i));
+      drawFor(i);
+    }
+    function go(n) { i = Math.max(0, Math.min(slides.length - 1, n)); render(); if (typeof dismissHint === 'function') dismissHint(); }
+    function next() { go(i + 1); } function prev() { go(i - 1); }
+
+    document.addEventListener('keydown', e => {
+      const _lc = document.getElementById('lcModal');
+      if (_lc && _lc.classList.contains('open')) {
+        if (e.key === 'Escape') _lc.classList.remove('open');
+        if (['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', ' ', 'PageDown', 'PageUp'].includes(e.key)) e.preventDefault();
+        return;
+      }
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown' || e.key === 'ArrowDown') { e.preventDefault(); next(); }
+      else if (e.key === 'ArrowLeft' || e.key === 'PageUp' || e.key === 'ArrowUp') { e.preventDefault(); prev(); }
+      else if (e.key.toLowerCase() === 's') { notes.classList.toggle('open'); }
+      else if (e.key.toLowerCase() === 'o') { ov.classList.toggle('open'); }
+      else if (e.key.toLowerCase() === 'f') { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+      else if (e.key === 'Escape') { ov.classList.remove('open'); notes.classList.remove('open'); }
+      else if (e.key === 'Home') { go(0); } else if (e.key === 'End') { go(slides.length - 1); }
+    });
+
+    // build overview
+    const ovgrid = document.getElementById('ovgrid');
+    slides.forEach((s, k) => {
+      const t = (s.querySelector('h1,h2')?.textContent || s.dataset.part || '').trim();
+      const c = document.createElement('div'); c.className = 'ovcard';
+      c.innerHTML = '<div class="on">' + pad(k + 1) + ' · ' + (s.dataset.part || '') + '</div><div class="ot">' + t + '</div>';
+      c.onclick = () => { go(k); ov.classList.remove('open'); };
+      ovgrid.appendChild(c);
+    });
+
+    // build right-side slide indicator (one bullet per slide)
+    slides.forEach((s, k) => {
+      const label = (s.dataset.part || ('Slide ' + (k + 1)));
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.setAttribute('aria-label', pad(k + 1) + ' · ' + label);
+      b.innerHTML = '<span class="d"></span>';
+      b.onclick = () => go(k);
+      dotsNav.appendChild(b);
+    });
+
+    // ---- scroll / drag navigation ----
+    const overlayOpen = () => notes.classList.contains('open') || ov.classList.contains('open') || document.getElementById('lcModal').classList.contains('open');
+    let dismissed = false;
+    function dismissHint() { if (!dismissed) { dismissed = true; scrollhint.style.display = 'none'; } }
+
+    let wheelLock = false;
+    window.addEventListener('wheel', e => {
+      if (overlayOpen()) return;
+      if (Math.abs(e.deltaY) < 12) return;
+      if (wheelLock) return;
+      wheelLock = true; dismissHint();
+      if (e.deltaY > 0) next(); else prev();
+      setTimeout(() => { wheelLock = false; }, 650);
+    }, { passive: true });
+
+    let touchStartY = null;
+    window.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, { passive: true });
+    window.addEventListener('touchend', e => {
+      if (touchStartY === null || overlayOpen()) return;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      touchStartY = null;
+      if (Math.abs(dy) < 48) return;
+      dismissHint();
+      if (dy < 0) next(); else prev();   // arraste para cima avança · para baixo volta
+    }, { passive: true });
+
+    /* ============ SVG DIAGRAMS (bound by data-diagram) ============ */
+    const drawn = {};
+    function drawFor(k) {
+      const el = slides[k].querySelector('[data-diagram]');
+      if (!el) return;
+      const id = el.dataset.diagram;
+      if (drawn[id] || !diagrams[id]) return;
+      drawn[id] = true;
+      el.innerHTML = diagrams[id]();
+    }
+
+    const diagrams = {
+      sandbox: () => `<svg viewBox="0 0 360 320">
+    <rect x="18" y="22" width="324" height="276" rx="16" fill="none" stroke="#3a3320" stroke-dasharray="4 6"/>
+    <text x="32" y="42" class="slbl a" font-size="11">SANDBOX · perímetro seguro</text>
+    <circle cx="180" cy="166" r="40" fill="url(#gsb)" stroke="#ffb01f" stroke-width="2"/>
+    <defs><radialGradient id="gsb"><stop offset="0%" stop-color="#ffce6b"/><stop offset="100%" stop-color="#d98a00"/></radialGradient></defs>
+    <text x="180" y="170" text-anchor="middle" class="sttl" font-size="12" fill="#0c0e13">AGENTE</text>
+    ${[['filesystem', 72, 74], ['git', 288, 74], ['bash', 46, 166], ['browser', 314, 166], ['tests', 92, 266], ['MCPs', 268, 266]].map(([t, x, y]) => `
+      <line x1="180" y1="166" x2="${x}" y2="${y}" stroke="#272d3a"/>
+      <circle cx="${x}" cy="${y}" r="22" fill="#12151d" stroke="#5ed7e8" stroke-width="1.3"/>
+      <text x="${x}" y="${y + 4}" text-anchor="middle" class="slbl c" font-size="9">${t}</text>`).join('')}
+  </svg>`,
+
+      valid: () => `<svg viewBox="0 0 360 320">
+    ${[['Humana', 'produto · risco · decisões', '#ff6b6b', 40, 40, 280],
+        ['Por agentes', 'evaluator · reviewer', '#ffb01f', 62, 86, 236],
+        ['Operacional', 'logs · traces · métricas', '#ffb01f', 84, 132, 192],
+        ['Comportamental', 'Playwright · screenshots', '#74e0bd', 106, 178, 148],
+        ['Dinâmica', 'unit · integration tests', '#74e0bd', 128, 224, 104],
+        ['Estática', 'typecheck · lint', '#5ed7e8', 150, 270, 60]].map(([a, b, c, x, y, w]) => `
+      <rect x="${x}" y="${y}" width="${w}" height="38" rx="6" fill="#12151d" stroke="${c}" stroke-width="1.3"/>
+      <text x="${x + w / 2}" y="${y + 17}" text-anchor="middle" class="slbl" font-size="11" fill="#eceef3">${a}</text>
+      <text x="${x + w / 2}" y="${y + 31}" text-anchor="middle" class="slbl" font-size="8.5">${b}</text>`).join('')}
+    <text x="180" y="18" text-anchor="middle" class="slbl" font-size="10" opacity=".6">↑ mais cara · mais decisiva</text>
+  </svg>`,
+
+      fly: () => `<svg viewBox="0 0 340 320">
+    ${['Falha', 'Diagnóstico', 'Melhoria', 'Melhor agente'].map((t, n, arr) => {
+        const a = (n / arr.length * 2 * Math.PI) - Math.PI / 2, x = 170 + Math.cos(a) * 105, y = 170 + Math.sin(a) * 105;
+        const c = n === 0 ? '#ff6b6b' : n === 2 ? '#ffb01f' : '#74e0bd';
+        return `<circle cx="${x}" cy="${y}" r="34" fill="#12151d" stroke="${c}" stroke-width="1.5"/><text x="${x}" y="${y + 4}" text-anchor="middle" class="slbl" font-size="11" fill="#eceef3">${t}</text>`;
+      }).join('')}
+    <circle cx="170" cy="170" r="160" fill="none" stroke="#3a3320" stroke-width="22" opacity=".25"/>
+    <path d="M170 35 A135 135 0 0 1 305 170" fill="none" stroke="#ffb01f" stroke-width="2" marker-end="url(#ar3)"/>
+    <path d="M305 170 A135 135 0 0 1 170 305" fill="none" stroke="#74e0bd" stroke-width="2" marker-end="url(#ar3)"/>
+    <path d="M170 305 A135 135 0 0 1 35 170" fill="none" stroke="#74e0bd" stroke-width="2" marker-end="url(#ar3)"/>
+    <path d="M35 170 A135 135 0 0 1 170 35" fill="none" stroke="#ff6b6b" stroke-width="2" marker-end="url(#ar3)"/>
+    <defs><marker id="ar3" markerWidth="9" markerHeight="9" refX="5" refY="4" orient="auto"><path d="M0 0 L9 4 L0 8 z" fill="#ffb01f"/></marker></defs>
+    <text x="170" y="174" text-anchor="middle" class="slbl a" font-size="11">the ratchet</text>
+  </svg>`,
+
+      /* model chip + harness ring (divisor da Parte 2) */
+      cover: () => `<svg viewBox="0 0 360 340">
+    <defs>
+      <radialGradient id="gm"><stop offset="0%" stop-color="#ffce6b"/><stop offset="100%" stop-color="#d98a00"/></radialGradient>
+      <marker id="cv" markerWidth="9" markerHeight="9" refX="5" refY="4" orient="auto"><path d="M0 0 L9 4 L0 8 z" fill="#5ed7e8"/></marker>
+    </defs>
+    <circle cx="180" cy="170" r="148" fill="none" stroke="#3a3320" stroke-dasharray="3 7" opacity=".7"/>
+    <text x="180" y="40" text-anchor="middle" class="slbl a" font-size="11">HARNESS · o sistema ao redor</text>
+    <rect x="138" y="128" width="84" height="84" rx="14" fill="url(#gm)" stroke="#ffb01f" stroke-width="2"/>
+    <text x="180" y="166" text-anchor="middle" class="sttl" font-size="13" fill="#0c0e13">MODELO</text>
+    <text x="180" y="184" text-anchor="middle" class="slbl" font-size="9" fill="#0c0e13" opacity=".8">texto → texto</text>
+    ${[['instrução', 180, 60], ['contexto', 300, 120], ['ferramentas', 300, 220], ['execução', 180, 290], ['estado', 60, 220], ['validação', 60, 120]].map(([t, x, y]) => `
+      <line x1="180" y1="170" x2="${x}" y2="${y}" stroke="#272d3a"/>
+      <circle cx="${x}" cy="${y}" r="26" fill="#12151d" stroke="#5ed7e8" stroke-width="1.3"/>
+      <text x="${x}" y="${y + 4}" text-anchor="middle" class="slbl c" font-size="9">${t}</text>`).join('')}
+  </svg>`,
+
+      /* reference pipeline (fluxo de referência) */
+      pipeline: () => `<svg viewBox="0 0 880 150">
+    <defs><marker id="pp" markerWidth="9" markerHeight="9" refX="5" refY="4" orient="auto"><path d="M0 0 L9 4 L0 8 z" fill="#929aab"/></marker></defs>
+    ${[['Alinhar', '/grill', '#5ed7e8'], ['PRD', '/to-prd', '#5ed7e8'], ['Issues', '/to-issues', '#ffb01f'], ['Implementar', '/tdd', '#74e0bd'], ['Handoff', '/handoff', '#74e0bd']].map(([t, c2, c], n) => {
+        const x = 20 + n * 172;
+        return `<rect x="${x}" y="40" width="142" height="66" rx="12" fill="#12151d" stroke="${c}" stroke-width="1.5"/>
+      <text x="${x + 71}" y="72" text-anchor="middle" class="slbl" font-size="14" fill="#eceef3">${t}</text>
+      <text x="${x + 71}" y="92" text-anchor="middle" class="slbl" font-size="11" fill="${c}">${c2}</text>
+      ${n < 4 ? `<line x1="${x + 142}" y1="73" x2="${x + 172}" y2="73" stroke="#444b5c" stroke-width="1.6" marker-end="url(#pp)"/>` : ''}`;
+      }).join('')}
+    <text x="20" y="26" class="slbl" font-size="10">entendimento</text>
+    <text x="860" y="26" text-anchor="end" class="slbl" font-size="10">código mergeado</text>
+  </svg>`
+    };
+
+    /* ============ interactive timeline (slide "A evolução") ============ */
+    (function () {
+      const tl = document.getElementById('tl'); if (!tl) return;
+      const data = [
+        {
+          y: 'nov 2022', color: 'cyan', title: 'Prompt Engineering', scope: 'escopo · uma interação',
+          text: 'Surge com o ChatGPT (nov/2022). A arte de <b>como pedir</b>: system prompts, exemplos e instruções sem ambiguidade.'
+        },
+        {
+          y: 'jun 2023', color: 'mut', title: 'O contexto externo entra em cena', scope: 'RAG · retrieval',
+          text: 'RAG e system prompts amadurecem. Passamos a <b>alimentar o modelo</b> com informação que ele não tem nos pesos.'
+        },
+        {
+          y: 'nov 2024', color: 'mut', title: 'Janelas gigantes + MCP', scope: '100k+ tokens',
+          text: 'As janelas de contexto explodem e a Anthropic lança o MCP (nov/2024). Mais espaço, mas o contexto ainda <b>satura e degrada</b> ("context rot").'
+        },
+        {
+          y: 'jun 2025', color: 'teal', title: 'Context Engineering', scope: 'escopo · uma janela de contexto',
+          text: 'Popularizado por Andrej Karpathy (meados de 2025). A arte do <b>o que entra na janela</b>: seleção, ordem, compactação e retrieval.'
+        },
+        {
+          y: 'fev 2026', color: 'amber', title: 'Harness Engineering', scope: 'escopo · o sistema inteiro do agente',
+          text: 'Cunhado em torno de Trivedy/Hashimoto (início de 2026) e formalizado por OpenAI, Anthropic e LangChain. <b>Como o agente trabalha</b> ao longo do tempo: estado, execução, loops e validação.'
+        }
+      ];
+      const markers = [...tl.querySelectorAll('.marker')];
+      const prog = document.getElementById('tlProg');
+      const detail = document.getElementById('eraDetail');
+      const cv = { cyan: 'var(--cyan)', teal: 'var(--teal)', amber: 'var(--amber)', mut: 'var(--mut)' };
+      const dotColor = d => d.classList.contains('c') ? cv.cyan : d.classList.contains('t') ? cv.teal : d.classList.contains('a') ? cv.amber : cv.mut;
+      function select(idx) {
+        markers.forEach((m, k) => { m.classList.toggle('sel', k === idx); const d = m.querySelector('.dot'); d.style.background = (k === idx) ? dotColor(d) : 'var(--ink)'; });
+        prog.style.width = markers[idx].style.left;   // fill até a posição (mês/ano) do marcador
+        const e = data[idx], c = cv[e.color];
+        detail.style.borderColor = (e.color === 'mut') ? 'var(--line)' : c;
+        detail.innerHTML = '<div class="et"><span class="ddot" style="background:' + c + '"></span>' + e.y + ' · ' + e.title + '</div>' +
+          '<div class="ed">' + e.text + '</div><div class="tag">' + e.scope + '</div>';
+      }
+      markers.forEach(m => m.addEventListener('click', () => { select(+m.dataset.i); m.blur(); }));
+      select(4); // padrão: Harness Engineering (fev 2026)
+    })();
+
+    /* ============ explorador "mapa de arquivos" (slide O mapa de arquivos) ============ */
+    (function () {
+      const tree = document.getElementById('fileTree'); if (!tree) return;
+      const data = [
+        {
+          ic: 'amber', t: 'CLAUDE.md', d: '<b>O quê construir.</b> Instruções do projeto carregadas no início de <b>toda sessão</b>: convenções, comandos e arquitetura. Mantenha enxuto (<b>&lt; 200 linhas</b>); o que cresce vira skill ou regra em <span class="mono">.claude/rules/</span>.',
+          code: '# CLAUDE.md  · o mapa (< 200 linhas)\n## Sempre\n- usar pnpm, não npm\n- rodar os testes antes de commitar\n## Nunca\n- comentar testes para "passar"',
+          ref: { t: 'docs/en/memory', u: 'https://code.claude.com/docs/en/memory' }
+        },
+        {
+          ic: 'teal', t: 'rules/', d: '<b>Regras por contexto.</b> O jeito de manter o CLAUDE.md enxuto: instruções por tópico em <span class="mono">.claude/rules/</span>. Cada arquivo pode ser <b>escopado por caminho</b> (frontmatter <span class="mono">paths</span>) e carrega só quando o Claude mexe num arquivo que casa, economizando contexto.',
+          code: '.claude/rules/api-design.md\n---\npaths: "src/api/**"\n---\n- toda rota valida o schema de entrada\n- erros sempre em JSON { error, code }',
+          ref: { t: 'docs/en/memory', u: 'https://code.claude.com/docs/en/memory' }
+        },
+        {
+          ic: 'cyan', t: 'settings.json', d: '<b>Como operar.</b> Permissões, variáveis e hooks. Resolvido por <b>precedência</b>: managed (TI, imposto) → local (gitignored) → projeto (commitado) → usuário (global).',
+          code: '.claude/settings.json\n{\n  "permissions": {\n    "allow": ["Bash(git *)", "Read", "Write"],\n    "deny": ["Read(.env*)"]\n  },\n  "hooks": { /* ... */ }\n}',
+          ref: { t: 'docs/en/settings', u: 'https://code.claude.com/docs/en/settings' }
+        },
+        {
+          ic: 'amber', t: 'hooks', d: '<b>O que garantir.</b> Shell commands em pontos fixos do ciclo de vida. Ficam sob a chave "hooks" do settings.json e <b>impõem o que o CLAUDE.md só sugere</b> (a regra deixa de depender da boa vontade do modelo).',
+          code: '"hooks": {\n  "PreToolUse": [{\n    "matcher": "Bash",\n    "hooks": [{ "type":"command",\n      "command":"./scripts/block-dangerous-git.sh" }]\n  }]\n}',
+          ref: { t: 'docs/en/hooks', u: 'https://code.claude.com/docs/en/hooks' }
+        },
+        {
+          ic: 'cyan', t: '.mcp.json', d: '<b>Conexões externas.</b> Servidores MCP (repos, bancos, APIs) como ferramentas. <b>Não</b> mora no settings.json. Cada servidor injeta texto confiável no contexto, é <b class="red">superfície de ataque</b>: allow-list e least privilege.',
+          code: '.mcp.json\n{\n  "mcpServers": {\n    "github": {\n      "command": "npx",\n      "args": ["-y", "@modelcontextprotocol/server-github"]\n    }\n  }\n}',
+          ref: { t: 'docs/en/mcp', u: 'https://code.claude.com/docs/en/mcp' }
+        },
+        {
+          ic: 'amber', t: 'skills/', d: '<b>Capacidades reutilizáveis.</b> Cada skill é uma pasta com SKILL.md + scripts + references, carregada por progressive disclosure. Detalhada no próximo slide.',
+          code: 'skills/\n  tdd/\n    SKILL.md     name + description (gatilho)\n    scripts/     código executável\n    references/  docs e exemplos',
+          ref: { t: 'docs/en/skills', u: 'https://code.claude.com/docs/en/skills' }
+        },
+        {
+          ic: 'cyan', t: 'agents/ · subagents', d: '<b>Subagents.</b> Um trabalhador em <b>janela de contexto própria</b>: faz a tarefa (lê muitos arquivos, pesquisa) e devolve só o <b>resumo</b>, sem poluir a conversa principal. Markdown com YAML frontmatter em <span class="mono">.claude/agents/</span>. Obrigatórios: <span class="mono">name</span> e <span class="mono">description</span> (gatilho de delegação). Opcionais: <span class="mono">tools</span>, <span class="mono">model</span> (default <span class="mono">inherit</span>), <span class="mono">skills</span>, <span class="mono">memory</span>. Claude delega sozinho, ou chame em <span class="mono">/agents</span>.',
+          code: '.claude/agents/code-reviewer.md\n---\nname: code-reviewer\ndescription: revisa PRs. use proativamente\ntools: Read, Grep, Glob, Bash\nmodel: sonnet      # sonnet|opus|haiku|inherit\nskills: [security-review]\n---\nVocê é um revisor de código focado em...',
+          ref: { t: 'docs/en/sub-agents', u: 'https://code.claude.com/docs/en/sub-agents' }
+        },
+        {
+          ic: 'teal', t: 'plugins', d: '<b>Empacotar e compartilhar.</b> Um plugin reúne skills, subagents, hooks e MCP num <b>pacote versionável</b>, distribuído por marketplaces. Manifesto em <span class="mono">.claude-plugin/plugin.json</span>; as skills ficam <b>namespaced</b> (<span class="mono">/meu-plugin:deploy</span>) para não colidir. Use quando o mesmo setup precisa rodar em vários repositórios ou ir para o time.',
+          code: '# instalar e usar\n/plugin marketplace add anthropics/claude-plugins-community\n/plugin install code-review@claude-community\n\n# testar local durante o dev\nclaude --plugin-dir ./meu-plugin',
+          ref: { t: 'docs/en/plugins', u: 'https://code.claude.com/docs/en/plugins' }
+        },
+        {
+          ic: 'teal', t: 'git worktree', d: '<b>Paralelo & isolado.</b> Cada agente trabalha numa <b>cópia fresca</b> do repo, sem colidir. O Claude cria via flag <span class="mono">--worktree</span>, a tool <span class="mono">EnterWorktree</span> ou um subagent com <span class="mono">isolation: worktree</span>. O <span class="mono">.worktreeinclude</span> copia arquivos gitignored (ex.: <span class="mono">.env</span>) para o novo worktree.',
+          code: '# rodar agentes em paralelo, sem colidir\nclaude --worktree feature-x\n\n.worktreeinclude   # na raiz do projeto\n.env\n.env.local\nconfig/secrets.json',
+          ref: { t: 'docs/en/worktrees', u: 'https://code.claude.com/docs/en/worktrees' }
+        }
+      ];
+      const cv = { amber: 'var(--amber)', cyan: 'var(--cyan)', teal: 'var(--teal)', mut: 'var(--mut)' };
+      const items = [...tree.querySelectorAll('.fitem')];
+      const detail = document.getElementById('fileDetail');
+      const esc = s => s.replace(/</g, '&lt;');
+      function sel(idx) {
+        items.forEach((b, k) => b.classList.toggle('on', k === idx));
+        const e = data[idx], c = cv[e.ic];
+        detail.style.borderColor = c;
+        detail.innerHTML = '<div class="ft"><span class="dot" style="background:' + c + '"></span>' + e.t + '</div>' +
+          '<div class="fd">' + e.d + '</div><pre>' + esc(e.code) + '</pre>' +
+          '<div class="docref"><a href="' + e.ref.u + '" target="_blank" rel="noopener">' + e.ref.t + ' ↗</a></div>';
+      }
+      items.forEach(b => b.addEventListener('click', () => { sel(+b.dataset.i); b.blur(); }));
+      sel(0);
+    })();
+
+    /* ============ abas de Skills (slide Skills) ============ */
+    (function () {
+      const tabsEl = document.getElementById('skillTabs'); if (!tabsEl) return;
+      const panel = document.getElementById('skillPanel');
+      const tabs = [...tabsEl.querySelectorAll('.tab')];
+      const panels = [
+        '<div class="fd" style="font-size:clamp(14px,1.2vw,17px)"><b>Skill</b> = uma <b>pasta</b> de instruções, scripts e recursos que o agente <b>descobre e usa</b>, não apenas um arquivo .md.</div>' +
+        '<div class="chips" style="margin-top:16px"><span class="chip a">Tool · uma ação</span><span class="chip t">Skill · um procedimento reutilizável</span><span class="chip c">MCP · conecta um sistema</span></div>',
+        '<pre style="background:#0a0c11;border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-family:var(--mono);font-size:13px;line-height:1.7;color:#cdd3df;white-space:pre">tdd/\n  SKILL.md      name + description · corpo · Gotchas\n  scripts/      código executável (composição)\n  references/   docs · assinaturas de API\n  assets/       templates\n  logs/         memória entre sessões</pre>',
+        '<div class="fd" style="margin-bottom:12px">Progressive disclosure: o agente carrega <b>só o que precisa, quando precisa</b>:</div>' +
+        '<ul class="blist"><li><span class="k">1</span><div><b>startup</b> · indexa só <b>nome + description</b> de cada skill</div></li>' +
+        '<li><span class="k">2</span><div><b>decide</b> · a description (gatilho) casa com a tarefa</div></li>' +
+        '<li><span class="k">3</span><div><b>carrega</b> · lê o SKILL.md inteiro sob demanda</div></li>' +
+        '<li><span class="k">4</span><div><b>executa</b> · roda os scripts; dados persistem entre sessões</div></li></ul>',
+        '<ul class="blist"><li><span class="k">▸</span><div><b>description = gatilho</b><div class="d">quando acionar, com palavras-chave, não um resumo</div></div></li>' +
+        '<li><span class="k">▸</span><div><b>Gotchas são ouro</b><div class="d">edge cases, nuances de schema, pegadinhas de ambiente</div></div></li>' +
+        '<li><span class="k">▸</span><div><b>scripts &gt; boilerplate</b><div class="d">o agente compõe em vez de reconstruir</div></div></li>' +
+        '<li><span class="k">▸</span><div><b>comece simples e itere</b><div class="d">poucas linhas + 1 gotcha; cresce com os erros</div></div></li>' +
+        '<li><span class="k">▸</span><div><b>verification skills</b><div class="d">o maior impacto medível na qualidade</div></div></li></ul>',
+        '<div class="chips">' + ['referência de API', 'verificação de produto', 'data fetching', 'automação de processo', 'scaffolding', 'qualidade de código', 'CI/CD', 'runbooks', 'infra ops'].map(t => '<span class="chip c">' + t + '</span>').join('') + '</div>' +
+        '<div class="fd" style="margin-top:14px;font-size:13.5px">famílias comuns de skills usadas no dia a dia de engenharia.</div>'
+      ];
+      function sel(idx) { tabs.forEach((t, k) => t.classList.toggle('on', k === idx)); panel.innerHTML = panels[idx]; }
+      tabs.forEach(t => t.addEventListener('click', () => { sel(+t.dataset.i); t.blur(); }));
+      sel(0);
+    })();
+
+    /* ============ caixinhas "O que o harness faz" (slide As pontes) ============ */
+    (function () {
+      const list = document.getElementById('bridgeList'); if (!list) return;
+      const data = [
+        {
+          ic: 'amber', piece: 'Filesystem + Git', behav: 'Trabalhar com dados reais, de forma durável',
+          d: 'A <b>primitiva mais fundamental</b> do harness: workspace durável, versionado e superfície de colaboração entre agentes. A sessão é temporária; o <b>projeto</b> é a memória. O estado durável do agente não é a conversa; é o que fica persistido nos arquivos.',
+          tags: ['workspace durável', 'git · versionamento', 'worktrees isolados', 'handoff files'],
+          note: '"O que o agente não vê em contexto, na prática, não existe."'
+        },
+        {
+          ic: 'cyan', piece: 'Bash + Code Execution', behav: 'Escrever e executar código',
+          d: 'O agente deixa de <b>recomendar</b> e passa a <b>agir</b>. Bash + code execution é a ferramenta de propósito geral: em vez de uma tool por ação, dê ao agente um computador inteiro.',
+          tags: ['propósito geral', 'um computador', 'o agente age, não sugere'],
+          note: '"Dê um computador, não uma tool por ação."'
+        },
+        {
+          ic: 'teal', piece: 'Sandboxed Environments + Tooling', behav: 'Execução segura + ferramentas prontas',
+          d: 'Autonomia sem isolamento aumenta o risco: o <b>sandbox</b> é o perímetro seguro. E com runtimes, git, browser e test runners <b>pré-instalados</b>, o agente se autovalida sem depender de ninguém.',
+          tags: ['descartável', 'allow-list', 'isolamento de rede', 'teardown', 'default tooling'],
+          note: 'O agente age, mas dentro de um perímetro que se descarta.'
+        },
+        {
+          ic: 'amber', piece: 'Memory Files + Web Search + MCPs', behav: 'Lembrar e acessar conhecimento novo',
+          d: '<b>Memory files</b> (como o AGENTS.md) são recarregados ao serem editados → aprendizado contínuo entre sessões. <b>Web search</b> traz conhecimento em tempo real. <b>MCPs</b> conectam sistemas externos, mas todo MCP é texto confiável injetado no prompt.',
+          tags: ['memory files', 'aprendizado contínuo', 'web search', 'MCPs = superfície de ataque'],
+          note: 'Cada MCP é texto confiável: trate a allowlist como superfície de ataque.'
+        },
+        {
+          ic: 'cyan', piece: 'Compaction + Tool Offloading + Skills', behav: 'Manter o desempenho em contextos longos',
+          d: 'A janela é finita e degrada ("context rot"). O harness a gerencia no tempo: <b>compaction</b> resume no lugar quando enche, <b>tool offloading</b> manda outputs gigantes pro disco, e <b>skills</b> carregam só quando a tarefa pede (progressive disclosure).',
+          tags: ['compaction', 'tool offloading', 'progressive disclosure', 'context reset'],
+          note: 'O contexto é curado, não despejado: cada token é uma escolha.'
+        },
+        {
+          ic: 'teal', piece: 'Ralph Loops + Planning + Verification', behav: 'Concluir trabalho de horizonte longo',
+          d: 'Para o que não cabe num turno: o <b>Ralph loop</b> roda sozinho (lê o objetivo → faz uma tarefa → valida → grava → recomeça em contexto limpo), o <b>planning</b> quebra o horizonte e a <b>verificação</b> prova, não promete, em três camadas (constraint · feedback · quality gates).',
+          tags: ['ralph loop', 'planning', 'verificação em 3 camadas', 'provar, não prometer'],
+          note: 'O estado mora nos arquivos; o progresso sobrevive a qualquer reset.'
+        }
+      ];
+      const cv = { amber: 'var(--amber)', cyan: 'var(--cyan)', teal: 'var(--teal)' };
+      const items = [...list.querySelectorAll('.bitem')];
+      const detail = document.getElementById('bridgeDetail');
+      function sel(idx) {
+        items.forEach((b, k) => b.classList.toggle('on', k === idx));
+        const e = data[idx], c = cv[e.ic];
+        detail.style.borderColor = c;
+        detail.innerHTML =
+          '<div class="ft"><span class="dot" style="background:' + c + '"></span>' + e.piece + '</div>' +
+          '<div class="mono" style="font-size:11.5px;letter-spacing:.05em;color:var(--mut);margin-top:12px">COMPORTAMENTO DESEJADO</div>' +
+          '<div style="font-family:var(--display);font-weight:600;font-size:clamp(14px,1.3vw,18px);margin-top:2px;color:var(--txt)">' + e.behav + '</div>' +
+          '<div class="fd" style="margin-top:12px">' + e.d + '</div>' +
+          '<div class="chips" style="margin-top:14px">' + e.tags.map(t => '<span class="chip c">' + t + '</span>').join('') + '</div>' +
+          '<div class="callout" style="margin-top:14px;font-size:clamp(13px,1.1vw,16px)">' + e.note + '</div>';
+      }
+      items.forEach(b => b.addEventListener('click', () => { sel(+b.dataset.i); b.blur(); }));
+      sel(0);
+    })();
+
+    /* ============ ciclo de vida do projeto · modal (slide Ciclo de vida) ============ */
+    (function () {
+      const grid = document.getElementById('lcGrid'); if (!grid) return;
+      const modal = document.getElementById('lcModal');
+      const phase = {
+        viabilidade: ['Fase 0 · Descoberta e enquadramento', '#9aa0ad'],
+        prd: ['Fase 1 · Produto e requisitos', 'var(--cyan)'],
+        bdd: ['Fase 1 · Produto e requisitos', 'var(--cyan)'],
+        sdd: ['Fase 2 · Especificação técnica de IA', 'var(--teal)'],
+        adr: ['Fase 3 · Arquitetura e decisões', '#afa9ec'],
+        tdd: ['Fase 4 · Implementação e testes', '#f0997b'],
+        eval: ['Fase 4 · Implementação e testes', '#f0997b'],
+        observ: ['Fase 5 · Operação e governança', '#ed93b1'],
+        docs: ['Fase 5 · Operação e governança', '#ed93b1'],
+        govern: ['Fase 5 · Operação e governança', '#ed93b1'],
+        rastreab: ['Fase 5 · Operação e governança', '#ed93b1']
+      };
+      const data = {
+        viabilidade: ['Estudo de viabilidade',
+          'Avaliação inicial se o problema <b>realmente precisa de IA</b>, qual tipo (regras, ML, LLM, agente) e sob quais restrições: custo, latência, dados, risco e regulação.',
+          'Antes de escrever qualquer linha, você responde "isto é problema de IA?" e "vai ou não vai?". Evita construir a coisa errada. É a primeira spec do projeto.'],
+        prd: ['PRD · Product Requirements Document',
+          'O documento de produto: problema, personas, escopo, fora-de-escopo e <b>métricas de sucesso</b>.',
+          'Define o "o quê" e como medir sucesso. Vira a spec viva que o agente persegue. Sem ele, o agente otimiza o alvo errado.'],
+        bdd: ['BDD · Behavior-Driven Development',
+          'Especificação do comportamento esperado em cenários <b>Given / When / Then</b>, legíveis por todo o time.',
+          'Transforma requisitos em critérios de aceite executáveis. Cada cenário vira um teste e um contrato do que "pronto" significa.'],
+        sdd: ['SDD · Spec-Driven Development',
+          'A <b>especificação técnica</b> do sistema de IA antes de gerar código, olhando o sistema por várias perspectivas: dados, fluxo, modelo, interfaces e falhas.',
+          'Reduz o espaço de solução antes da primeira linha (constraint / feedforward). O código é gerado contra a spec, não improvisado.'],
+        adr: ['ADR · Architecture Decision Record',
+          'Registro curto de uma decisão arquitetural: contexto, opções, decisão e consequências. Captura o <b>porquê</b>, não só o quê.',
+          'É a memória das decisões. Meses depois, ou para o próprio agente, o ADR explica por que escolhemos aquele modelo ou provedor. Sobrevive ao reset de contexto.'],
+        tdd: ['TDD · Test-Driven Development',
+          'Escrever o teste antes do código (red, green, refactor) para a parte <b>determinística</b> do sistema.',
+          'Dá ao agente um alvo objetivo e auto-verificável. O loop falha, corrige sozinho e segue, sem humano no meio.'],
+        eval: ['Eval-Driven Development',
+          'Avaliações (datasets + métricas) para a parte <b>probabilística</b>, que testes unitários não cobrem: a qualidade da resposta do modelo.',
+          'Você mede a saída contra exemplos e limiares. Sem evals, "melhorou" é achismo; com evals, é número. É o TDD do não-determinístico.'],
+        observ: ['Observabilidade',
+          'Registros, métricas, traces e alertas em produção, incluindo <b>desvio de comportamento</b> do modelo.',
+          'Você enxerga o que o agente fez, quanto custou e quando degradou. Sem isso, falhas em produção ficam invisíveis até o usuário reclamar.'],
+        docs: ['Documentação',
+          'Manuais, fichas do sistema e <b>docs vivos</b> do projeto: arquitetura, runbooks e decisões.',
+          'É legibilidade para humanos e para o agente. O que não está escrito, para o agente, não existe. Vira contexto reaproveitável.'],
+        govern: ['Governança',
+          'Políticas, papéis e <b>responsabilidades</b> sobre o uso da IA: quem aprova, o que é permitido, limites e gates humanos.',
+          'Define o perímetro e quem responde pelo quê. Transforma boa intenção em regra: allow-lists, aprovações e limites de ação.'],
+        rastreab: ['Rastreabilidade',
+          'Trilha de auditoria que liga <b>decisão → spec → código → execução</b>, incluindo requisitos legais (ex.: RIPD / LGPD).',
+          'Permite responder "por que o sistema fez isso?" e "de onde veio essa regra?". Essencial para compliance e para depurar incidentes.']
+      };
+      const mph = document.getElementById('lcMph'), title = document.getElementById('lcTitle'),
+        hdot = document.getElementById('lcHdot'), what = document.getElementById('lcWhat'),
+        prac = document.getElementById('lcPrac'), box = modal.querySelector('.box');
+      function open(k) {
+        const d = data[k], p = phase[k]; if (!d) return;
+        mph.textContent = p[0]; title.textContent = d[0];
+        hdot.style.background = p[1]; box.style.borderTopColor = p[1];
+        what.innerHTML = d[1]; prac.innerHTML = d[2];
+        modal.classList.add('open');
+      }
+      function close() { modal.classList.remove('open'); }
+      grid.querySelectorAll('.lcbox').forEach(b => b.addEventListener('click', () => open(b.dataset.k)));
+      document.getElementById('lcClose').addEventListener('click', close);
+      modal.addEventListener('click', e => { if (e.target === modal) close(); });
+    })();
+
+    render();
+  </script>
+</body>
+
+</html>

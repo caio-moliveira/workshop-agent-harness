@@ -1,6 +1,5 @@
 .venv/
 .env
-uv.lock
 
 # Python
 __pycache__/
@@ -18,6 +17,7 @@ __pycache__/
 # CLAUDE.md
 # HANDOFF.md
 # .mcp.json
-apresentacao/
+# apresentacao/
 # metrics/
 # .skills-lock.json
+eval-report.json

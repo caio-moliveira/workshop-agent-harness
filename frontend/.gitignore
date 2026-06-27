@@ -1,0 +1,9 @@
+node_modules
+dist
+*.local
+.vite
+
+# artefatos do tsc -b (build composite) — não versionar
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
