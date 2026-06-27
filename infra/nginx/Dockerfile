@@ -1,11 +1,17 @@
-# nginx — reverse proxy + estáticos. Build context = raiz do repo (ver docker-compose.yml).
-# Placeholder de SPA até a fatia do frontend, que troca por um build multi-stage do React+Vite.
+# nginx — única porta exposta: serve a SPA (React+Vite) + proxy da API.
+# Build multi-stage: estágio Node compila a SPA; estágio nginx serve o `dist`.
+# Build context = raiz do repo (ver docker-compose.yml).
+
+# --- estágio de build da SPA ---
+FROM node:22-alpine AS build
+WORKDIR /app
+# Camada de deps separada (cacheável): só muda quando o lockfile muda.
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY frontend/ ./
+RUN npm run build
+
+# --- estágio de runtime (nginx) ---
 FROM nginx:1.27-alpine
-
 COPY infra/nginx/nginx.conf /etc/nginx/conf.d/default.conf
-
-RUN printf '%s' \
-    '<!doctype html><html lang="pt-br"><head><meta charset="utf-8">' \
-    '<title>Agente Analítico de Vendas — workshop</title></head>' \
-    '<body><h1>Agente Analítico de Vendas</h1><p>API no ar. Endpoints: <code>/health</code>, <code>/chat</code>.</p>' \
-    '</body></html>' > /usr/share/nginx/html/index.html
+COPY --from=build /app/dist /usr/share/nginx/html
